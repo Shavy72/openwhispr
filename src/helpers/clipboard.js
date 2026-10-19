@@ -9,6 +9,8 @@ const { getLinuxSessionInfo } = require("./linuxSession");
 const { getCosmicActiveAppId } = require("./cosmicToplevel");
 const { writeFileDropList } = require("./fileClipboard");
 
+// Time the target app needs to read the pasted file list after Ctrl+V.
+const FILE_PASTE_SETTLE_MS = 150;
 const CACHE_TTL_MS = 30000;
 
 // isTrustedAccessibilityClient() is a cheap synchronous syscall, so the cache
@@ -987,7 +989,11 @@ class ClipboardManager {
     return this._runClipboardOperation(async () => {
       await writeFileDropList(absPath);
       this.safeLog("📎 File copied to clipboard:", absPath);
-      return this.pasteWindows(null, {});
+      const result = await this.pasteWindows(null, {});
+      // Queue must stay held until the target has read the clipboard, or a
+      // dictation right after could overwrite the file list before Ctrl+V lands.
+      await new Promise((resolve) => setTimeout(resolve, FILE_PASTE_SETTLE_MS));
+      return result;
     });
   }
 

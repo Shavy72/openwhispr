@@ -33,8 +33,6 @@ function writeFileDropList(absPath) {
       [
         "-NoProfile",
         "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
         "-Command",
         "Set-Clipboard -LiteralPath $env:OPENWHISPR_PASTE_FILE",
       ],
