@@ -707,8 +707,37 @@ function registerSidecars() {
   sidecarRegistry.register("onnx", () => onnxWorkerClient.stop());
 }
 
+// Test hotkey for the file-paste building block: pastes a bundled sample MP3 as
+// a file into the focused app. Packaged builds ship it via extraResources
+// (outside the asar), because PowerShell needs a real file on disk.
+const TEST_FILE_PASTE_HOTKEY = "Control+Alt+Shift+M";
+
+function registerTestFilePasteHotkey() {
+  if (process.platform !== "win32") return;
+  const samplePath = app.isPackaged
+    ? path.join(process.resourcesPath, "test-assets", "beispiel.mp3")
+    : path.join(__dirname, "assets", "test", "beispiel.mp3");
+  const registered = globalShortcut.register(TEST_FILE_PASTE_HOTKEY, () => {
+    clipboardManager.pasteFile(samplePath).catch((error) => {
+      require("./src/helpers/debugLogger").warn(
+        "Test file paste failed",
+        { error: error?.message, samplePath },
+        "clipboard"
+      );
+    });
+  });
+  if (!registered) {
+    require("./src/helpers/debugLogger").warn(
+      "Test file paste hotkey not registered",
+      { hotkey: TEST_FILE_PASTE_HOTKEY },
+      "clipboard"
+    );
+  }
+}
+
 // Phase 2: Non-critical setup after windows are visible
 function initializeDeferredManagers() {
+  registerTestFilePasteHotkey();
   ensureYdotool().catch((err) => {
     require("./src/helpers/debugLogger").warn(
       "ydotool setup error",

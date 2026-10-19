@@ -7,6 +7,7 @@ const os = require("os");
 const debugLogger = require("./debugLogger");
 const { getLinuxSessionInfo } = require("./linuxSession");
 const { getCosmicActiveAppId } = require("./cosmicToplevel");
+const { writeFileDropList } = require("./fileClipboard");
 
 const CACHE_TTL_MS = 30000;
 
@@ -971,6 +972,23 @@ class ClipboardManager {
       () => this._pasteText(text, options),
       (result) => result?.restoreComplete
     );
+  }
+
+  /**
+   * Pastes a file (not text) into the focused app: puts it on the clipboard as
+   * a FileDropList, then fires Ctrl+V through the same Windows paste path as
+   * dictation. Windows only. The file stays on the clipboard afterwards (no
+   * restore, since the text-based restore cannot bring back a file list).
+   */
+  async pasteFile(absPath) {
+    if (process.platform !== "win32") {
+      throw new Error("pasteFile is only supported on Windows");
+    }
+    return this._runClipboardOperation(async () => {
+      await writeFileDropList(absPath);
+      this.safeLog("📎 File copied to clipboard:", absPath);
+      return this.pasteWindows(null, {});
+    });
   }
 
   async runClipboardOperation(operation) {
