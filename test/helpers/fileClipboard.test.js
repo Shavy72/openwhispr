@@ -102,7 +102,11 @@ test(
       ).trim();
       console.log("pasteboard:", info.trim(), "|", pasted);
       assert.match(info, /furl/);
-      assert.equal(fs.realpathSync(pasted), fs.realpathSync(target));
+      // File URLs come back in NFD (decomposed ü); compare canonical forms.
+      assert.equal(
+        fs.realpathSync(pasted).normalize("NFC"),
+        fs.realpathSync(target).normalize("NFC")
+      );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
