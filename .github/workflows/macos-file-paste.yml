@@ -5,7 +5,20 @@ name: macOS File Paste
 on:
   workflow_dispatch:
   push:
-    branches: [feat/datei-einfuegen-mac]
+    branches: [main]
+    paths:
+      - "src/helpers/fileClipboard.js"
+      - "src/helpers/clipboard.js"
+      - "test/helpers/fileClipboard.test.js"
+      - "test/helpers/pasteFile.test.js"
+      - ".github/workflows/macos-file-paste.yml"
+  pull_request:
+    paths:
+      - "src/helpers/fileClipboard.js"
+      - "src/helpers/clipboard.js"
+      - "test/helpers/fileClipboard.test.js"
+      - "test/helpers/pasteFile.test.js"
+      - ".github/workflows/macos-file-paste.yml"
 
 permissions:
   contents: read
