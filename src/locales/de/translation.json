@@ -2473,6 +2473,10 @@
       "translationHotkey": {
         "title": "Übersetzungs-Hotkey",
         "description": "Diktiere in beliebiger Sprache — der eingefügte Text kommt übersetzt heraus"
+      },
+      "voiceMessageHotkey": {
+        "title": "Kürzel B – Text → Sprachnachricht",
+        "description": "Text ins Chat-Feld tippen, Kürzel drücken – die Sprachnachricht in der Stimme deines Models ersetzt den Text."
       }
     },
     "permissions": {
@@ -3939,6 +3943,11 @@
       "cleanupFailed": {
         "title": "Bereinigung fehlgeschlagen",
         "description": "Dein Diktat wurde ohne KI-Bereinigung eingefügt."
+      },
+      "voiceMessage": {
+        "working": "Sprachnachricht wird erstellt …",
+        "done": "Sprachnachricht eingefügt.",
+        "errorTitle": "Sprachnachricht fehlgeschlagen"
       }
     },
     "mic": {
@@ -4970,5 +4979,25 @@
     "permissionDenied": "Verweigert",
     "permissionRestricted": "Eingeschränkt",
     "permissionNotDetermined": "Nicht angefragt"
+  },
+  "flowbaseAccount": {
+    "title": "Flowbase-Konto",
+    "loginDescription": "Melde dich mit deinem Flowbase-Konto an.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "signingIn": "Wird angemeldet…",
+    "signOut": "Abmelden",
+    "errors": {
+      "unexpected": "Anmeldung fehlgeschlagen. Bitte versuche es erneut."
+    },
+    "models": {
+      "title": "Deine Models",
+      "empty": "Dir ist noch kein Model zugewiesen. Melde dich bei deinem Admin.",
+      "noneActive": "Wähle ein Model, damit Kürzel B funktioniert.",
+      "active": "Aktiv",
+      "select": "Zum Aktivieren anklicken"
+    },
+    "continue": "Weiter"
   }
 }

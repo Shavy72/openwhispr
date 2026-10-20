@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary.tsx";
 import CleanupFailureToastListener from "./components/CleanupFailureToastListener.tsx";
 import TinfoilModelSwitchToastListener from "./components/TinfoilModelSwitchToastListener.tsx";
 import GpuPackMigrationToastListener from "./components/GpuPackMigrationToastListener.tsx";
+import VoiceMessageStatusToastListener from "./components/VoiceMessageStatusToastListener.tsx";
 import { I18nDirectionProvider } from "./components/I18nDirectionProvider.tsx";
 import { ToastProvider } from "./components/ui/Toast.tsx";
 import { SettingsProvider } from "./hooks/useSettings";
@@ -34,6 +35,7 @@ root.render(
               <TinfoilModelSwitchToastListener />
               <CleanupFailureToastListener />
               <GpuPackMigrationToastListener />
+              <VoiceMessageStatusToastListener />
               <AppRouter />
             </ToastProvider>
           </SettingsProvider>

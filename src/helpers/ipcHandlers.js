@@ -16,6 +16,7 @@ const { resolveFailedGpuBackends } = require("./whisper");
 const { WHISPER_GPU_FAILURE_REASON_KEYS } = require("./whisperGpuFailureReason");
 const { BYOK_API_KEYS } = require("../config/secretKeys");
 const tokenStore = require("./tokenStore");
+const flowbaseClient = require("./flowbaseClient");
 const accountScopeBinding = require("./accountScopeBinding");
 const { registerProductHelpIpc, remoteHelpPolicyState } = require("./productHelp");
 const { createCloudApiRequestHandler } = require("./cloudApiRequest");
@@ -6365,6 +6366,17 @@ class IPCHandlers {
       }
     });
 
+    // Flowbase-Konto: alle HTTP-Calls laufen im Main-Prozess (flowbaseClient).
+    ipcMain.handle("flowbase-login", (_event, email, password) =>
+      flowbaseClient.login(email, password)
+    );
+    ipcMain.handle("flowbase-logout", () => flowbaseClient.logout());
+    ipcMain.handle("flowbase-get-session", () => flowbaseClient.getSession());
+    ipcMain.handle("flowbase-list-models", () => flowbaseClient.listModels());
+    ipcMain.handle("flowbase-set-active-model", (_event, modelId) =>
+      flowbaseClient.setActiveModel(modelId)
+    );
+
     ipcMain.handle("auth-get-token", () => tokenStore.get());
     ipcMain.handle("auth-get-token-state", () => tokenStore.getState());
     ipcMain.handle("auth-set-token", (_event, token, expectedGeneration) => {
@@ -12049,6 +12061,40 @@ class IPCHandlers {
 
     ipcMain.handle("get-translation-key", async () => {
       return this.environmentManager.getTranslationKey?.() || "";
+    });
+
+    ipcMain.handle("update-voice-message-hotkey", async (_event, hotkey) => {
+      const hotkeyManager = this.windowManager.hotkeyManager;
+      const voiceMessageCallback = this.windowManager._voiceMessageHotkeyCallback;
+      if (!voiceMessageCallback) {
+        return { success: false };
+      }
+
+      if (!hotkey) {
+        const removed = await hotkeyManager.unregisterSlot("voiceMessage");
+        if (removed === false) return { success: false };
+        this.environmentManager.saveVoiceMessageKey?.("");
+        this.windowManager.reconcileNativeKeyListeners();
+        this._notifyHotkeyChanged("");
+        return { success: true, message: "Voice message hotkey cleared" };
+      }
+
+      const result = await hotkeyManager.registerSlot(
+        "voiceMessage",
+        hotkey,
+        voiceMessageCallback,
+        {
+          atomic: true,
+        }
+      );
+      this.windowManager.reconcileNativeKeyListeners();
+      if (result.success) {
+        this.environmentManager.saveVoiceMessageKey?.(hotkey);
+        this._notifyHotkeyChanged(hotkey);
+        return { success: true, message: `Voice message hotkey updated to: ${hotkey}` };
+      }
+
+      return { success: false, message: result.error };
     });
 
     ipcMain.handle("acquire-recording-lock", async (_event, pipeline) => {

@@ -2179,6 +2179,10 @@
       "translationHotkey": {
         "title": "翻訳ホットキー",
         "description": "どの言語で話しても、貼り付けられるテキストは翻訳済みになります"
+      },
+      "voiceMessageHotkey": {
+        "title": "Shortcut B – Text → Voice message",
+        "description": "Type text into the chat field, press the shortcut – the voice message in your model's voice replaces the text."
       }
     },
     "permissions": {
@@ -3769,6 +3773,11 @@
       "cleanupFailed": {
         "title": "クリーンアップに失敗しました",
         "description": "ディクテーションは AI クリーンアップなしで貼り付けられました。"
+      },
+      "voiceMessage": {
+        "working": "Creating voice message …",
+        "done": "Voice message inserted.",
+        "errorTitle": "Voice message failed"
       }
     },
     "mic": {
@@ -4970,5 +4979,25 @@
     "permissionDenied": "拒否",
     "permissionRestricted": "制限あり",
     "permissionNotDetermined": "未要求"
+  },
+  "flowbaseAccount": {
+    "title": "Flowbase account",
+    "loginDescription": "Sign in with your Flowbase account.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signOut": "Sign out",
+    "errors": {
+      "unexpected": "Sign-in failed. Please try again."
+    },
+    "models": {
+      "title": "Your models",
+      "empty": "No model has been assigned to you yet. Please contact your admin.",
+      "noneActive": "Choose a model so shortcut B works.",
+      "active": "Active",
+      "select": "Click to activate"
+    },
+    "continue": "Continue"
   }
 }

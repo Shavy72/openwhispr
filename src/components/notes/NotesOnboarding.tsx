@@ -29,6 +29,8 @@ import { usePolicySnapshot } from "../../hooks/usePolicy";
 import { PAGE_CONTENT_WIDTH_CLASS } from "../ui/pageWidth";
 import { PAGE_HERO_ICON_TILE_CLASS } from "../ui/surfaces";
 
+const FLOWBASE_SHOW_LLM_SETUP = false;
+
 const CARD_CLASS = "rounded-2xl border transition-colors duration-200";
 const CARD_IDLE_CLASS = "border-border/70 bg-card/50 dark:border-white/10 dark:bg-surface-2/60";
 const CARD_DONE_CLASS = "border-success/20 bg-success/[0.03]";
@@ -140,7 +142,8 @@ export default function NotesOnboarding({ onComplete }: NotesOnboardingProps) {
         </div>
 
         {/* LLM Configuration — non-Pro only, deferred until pro status is known */}
-        {!isProLoading && !isProUser && (
+        {/* Flowbase-Fork: keine Anbieter-/Modell-Wahl und keine API-Keys in der App. */}
+        {FLOWBASE_SHOW_LLM_SETUP && !isProLoading && !isProUser && (
           <div className={cn(CARD_CLASS, isLLMConfigured ? CARD_DONE_CLASS : CARD_IDLE_CLASS)}>
             <button
               type="button"

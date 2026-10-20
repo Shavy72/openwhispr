@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertCircle } from "./icons";
-import { CompactAuthenticationFlow } from "./CompactAuthenticationFlow";
+import FlowbaseAccountSection from "./settings/FlowbaseAccountSection";
+import { Button } from "./ui/button";
 import UseCaseStep from "./onboarding/UseCaseStep";
 import { hasUseCaseIntent } from "./onboarding/useCases";
 import OnboardingShell, { OnboardingStepHeader } from "./onboarding/OnboardingShell";
@@ -42,7 +43,6 @@ import { validateHotkeyForSlot } from "../utils/hotkeyValidation";
 import { getPlatform } from "../utils/platform";
 import { ACCESSIBILITY_SKIPPED_KEY, areRequiredPermissionsMet } from "../utils/permissions";
 import { cloudPost } from "../services/cloudApi";
-import { signOut } from "../lib/auth";
 import logger from "../utils/logger";
 import {
   COMPACT_STEPS,
@@ -52,11 +52,9 @@ import {
   getOnboardingRoute,
   isSetupDecisionStep,
   reconcileStepWithRoute,
-  resetOnboardingProgress,
   resolveEnterpriseWorkspaceForOnboarding,
   shouldInitializeMacAccessibilityFeatures,
   shouldSkipOnboardingSetupChoice,
-  type OnboardingAuthDraft,
   type OnboardingByokDraft,
   type OnboardingLocalModelDraft,
   type OnboardingResumeState,
@@ -77,6 +75,10 @@ import LinuxPttSetupInfo from "./ui/LinuxPttSetupInfo";
 interface OnboardingFlowProps {
   onComplete: (options?: { openSettings?: boolean }) => void;
 }
+
+// Flowbase-Fork: keine Anbieter-/Modell-Wahl im Onboarding. Der Abschluss läuft
+// wie bei Enterprise ohne Provider-/Modell-Einstellungen (finalizeOnboarding("managed")).
+const FLOWBASE_SKIP_SETUP_CHOICE = true;
 
 type OnboardingCompletionMode = Exclude<OnboardingSetupMode, null> | "managed";
 
@@ -115,15 +117,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setPermissionGuide,
     clearSession,
   } = useOnboardingSession();
-
-  const handleLogout = useCallback(async () => {
-    await signOut();
-    resetOnboardingProgress(localStorage);
-    window.location.reload();
-  }, []);
-  // Set by Back on the permissions step: a signed-in user who asked to return to
-  // the auth step gets the welcome screen (where Log out lives), not auto-advance.
-  const [returnedToAuth, setReturnedToAuth] = useState(false);
 
   const { dictationHotkeyConfirmed, assistantHotkeyConfirmed } = session.resume;
   const [dictationHotkey, setDictationHotkey] = useState(() =>
@@ -186,18 +179,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const setAssistantDemoSuccess = useCallback(
     (successful: boolean) => updateResumeFlag("assistantDemoCompleted", successful),
     [updateResumeFlag]
-  );
-  const updateAuthResumeState = useCallback(
-    (patch: Partial<OnboardingAuthDraft>) => {
-      setSession((current) => ({
-        ...current,
-        resume: {
-          ...current.resume,
-          auth: { ...current.resume.auth, ...patch },
-        },
-      }));
-    },
-    [setSession]
   );
 
   useClipboard((dialog) =>
@@ -319,15 +300,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         setupMode: session.setupMode,
         agentAllowed,
         requiredModelsPending,
-        skipSetupChoice: skipSetupChoiceForEnterprise,
+        skipSetupChoice: FLOWBASE_SKIP_SETUP_CHOICE,
       }),
-    [
-      agentAllowed,
-      requiredModelsPending,
-      session.authPath,
-      session.setupMode,
-      skipSetupChoiceForEnterprise,
-    ]
+    [agentAllowed, requiredModelsPending, session.authPath, session.setupMode]
   );
   const currentStepId = reconcileStepWithRoute(session.currentStepId, route);
   const compact = COMPACT_STEPS.has(currentStepId);
@@ -688,11 +663,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // writing provider or model settings, just as if that had been their final
   // step originally.
   useEffect(() => {
-    if (!skipSetupChoiceForEnterprise || session.currentStepId !== "setup-choice" || isFinishing) {
+    if (!FLOWBASE_SKIP_SETUP_CHOICE || session.currentStepId !== "setup-choice" || isFinishing) {
       return;
     }
     void finalizeOnboarding("managed");
-  }, [finalizeOnboarding, isFinishing, session.currentStepId, skipSetupChoiceForEnterprise]);
+  }, [finalizeOnboarding, isFinishing, session.currentStepId]);
 
   const applyReasoningSelectionToAllScopes = useCallback(
     (mode: "byok" | "local") => {
@@ -833,7 +808,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       return;
     }
 
-    if (skipSetupChoiceForEnterprise) {
+    if (FLOWBASE_SKIP_SETUP_CHOICE) {
       await finalizeOnboarding("managed");
       return;
     }
@@ -858,7 +833,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     t,
     withExtraDictationHotkeys,
     setupDecisionPending,
-    skipSetupChoiceForEnterprise,
   ]);
 
   const skipLocalSetup = useCallback(async () => {
@@ -905,27 +879,20 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const renderStep = () => {
     switch (currentStepId) {
       case "auth":
+        // Flowbase-Fork: Flowbase-Login statt Upstream-Konto; für Upstream gilt der Gast-Weg.
         return (
-          <div className="min-h-full w-full">
-            <CompactAuthenticationFlow
-              resumeState={session.resume.auth}
-              onResumeStateChange={updateAuthResumeState}
-              autoContinue={!returnedToAuth}
-              onSignOut={() => void handleLogout()}
-              onContinueWithoutAccount={() => {
-                // Guests continue onto their route's permissions step — jumping
-                // straight to setup-choice would skip the permission grants and
-                // hotkey the guest route exists to guarantee (see flow.ts).
-                setReturnedToAuth(false);
+          <div className="min-h-full w-full mx-auto max-w-sm space-y-4 py-6">
+            <FlowbaseAccountSection />
+            <Button
+              className="w-full"
+              onClick={() => {
+                // Gast-Weg behält Mikrofon-Freigabe und Kürzel-Schritt (siehe flow.ts).
                 setAuthPath("guest");
                 goTo("permissions");
               }}
-              onAuthComplete={() => {
-                setReturnedToAuth(false);
-                setAuthPath("account");
-                goTo(session.setupMode === "cloud" ? "setup-choice" : "permissions");
-              }}
-            />
+            >
+              {t("flowbaseAccount.continue")}
+            </Button>
           </div>
         );
 
@@ -966,14 +933,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   }
                 : undefined
             }
-            onBack={
-              session.history.length > 0
-                ? () => {
-                    setReturnedToAuth(true);
-                    goBack();
-                  }
-                : undefined
-            }
+            onBack={session.history.length > 0 ? goBack : undefined}
             onContinue={() => void continueFromCurrentStep()}
           />
         );

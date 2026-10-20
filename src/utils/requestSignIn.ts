@@ -2,18 +2,14 @@
 // and again for Google, Microsoft, Apple and SSO (applySessionTokenAndRefresh in main.js).
 export const SIGN_IN_PROMPTED_AT_KEY = "signInPromptedAt";
 
+/** Flowbase-Fork: Renderer-Event, auf das ControlPanel die Sektion „Flowbase-Konto“ öffnet. */
+export const FLOWBASE_ACCOUNT_REQUEST_EVENT = "flowbase:open-account";
+
 /**
- * Logs a guest out instead of restarting onboarding.
- *
- * Every signed-out "sign in" button used to reset onboarding progress (#2128), and
- * re-walking the wizard rewrote the provider setup the user had configured. Dropping
- * the guest flag leaves onboarding finished, so AppRouter routes to the same
- * reauthentication screen a signed-out account already gets, with every setting intact.
- * Its "Continue without an account" writes the flag back.
+ * Flowbase-Fork: Es gibt kein Upstream-Login mehr. Jeder „Anmelden“-Knopf öffnet das
+ * Flowbase-Konto in den Einstellungen; Onboarding-Stand und Gast-Flags bleiben unberührt,
+ * damit der Upstream-Reauthentifizierungs-Screen nie erscheint.
  */
 export function requestSignIn(): void {
-  localStorage.setItem(SIGN_IN_PROMPTED_AT_KEY, String(Date.now()));
-  localStorage.removeItem("authenticationSkipped");
-  localStorage.removeItem("skipAuth");
-  window.location.reload();
+  window.dispatchEvent(new Event(FLOWBASE_ACCOUNT_REQUEST_EVENT));
 }

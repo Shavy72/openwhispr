@@ -19,6 +19,18 @@ import { useAuth } from "../hooks/useAuth";
 
 export type { SettingsSectionType };
 
+/**
+ * Flowbase-Fork: Upstream-Bereiche (Abrechnung, Workspace, Anbieter-/Modell-Wahl, API-Keys)
+ * werden nur ausgeblendet, nicht gelöscht — Upstream-Merges bleiben so einfach.
+ * Einzige Stelle für das Ausblenden; Sidebar und Navigation filtern danach.
+ */
+const HIDDEN_SETTINGS_SECTIONS: ReadonlySet<SettingsSectionType> = new Set([
+  "plansBilling",
+  "workspace",
+  "speechToText",
+  "llms",
+]);
+
 // The old AI Models sidebar had four items (transcription, meetings,
 // intelligence, agentMode) — they now collapse into two: speechToText + llms.
 // Legacy deep-links land on the matching sub-tab via LEGACY_SUB_TAB.
@@ -127,12 +139,16 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         group: t("settingsModal.groups.system"),
       },
     ];
-    return isSignedIn ? items : items.filter((item) => item.id !== "workspace");
+    return items.filter(
+      (item) => !HIDDEN_SETTINGS_SECTIONS.has(item.id) && (isSignedIn || item.id !== "workspace")
+    );
   }, [t, isSignedIn]);
 
   const resolveSection = (section: string | undefined): SettingsSectionType => {
     if (!section) return "account";
-    return (SECTION_ALIASES[section] ?? section) as SettingsSectionType;
+    const resolved = (SECTION_ALIASES[section] ?? section) as SettingsSectionType;
+    // Ausgeblendete Upstream-Bereiche (Abrechnung, Anbieter …) landen beim Flowbase-Konto.
+    return HIDDEN_SETTINGS_SECTIONS.has(resolved) ? "account" : resolved;
   };
 
   const [activeSection, setActiveSection] = React.useState<SettingsSectionType>(() =>
@@ -153,7 +169,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
   }
 
   const handleSectionChange = (section: SettingsSectionType) => {
-    setActiveSection(section);
+    setActiveSection(resolveSection(section));
     setInitialSubTab(undefined);
   };
 

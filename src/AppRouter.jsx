@@ -22,6 +22,13 @@ const isOnboardingInProgress = () =>
   localStorage.getItem(LEGACY_ONBOARDING_STEP_KEY) !== null ||
   localStorage.getItem(ONBOARDING_SESSION_KEY) !== null;
 
+// Flowbase-Fork: kein Upstream-Konto. Gast-Flags immer setzen, damit der Upstream-
+// Reauthentifizierungs-Screen (ReauthenticationScreen) nie erscheint — auch bei Altinstallationen.
+if (typeof window !== "undefined") {
+  localStorage.setItem("authenticationSkipped", "true");
+  localStorage.setItem("skipAuth", "true");
+}
+
 const ControlPanel = React.lazy(() => import("./components/ControlPanel.tsx"));
 const OnboardingFlow = React.lazy(() => import("./components/OnboardingFlow.tsx"));
 

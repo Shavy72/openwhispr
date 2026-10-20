@@ -69,17 +69,21 @@ function createContext(calls) {
   };
 }
 
-test("Settings sign-out ends a live meeting before the account scope is cleared", async () => {
-  const calls = [];
-  const handleSignOut = vm.runInNewContext(
-    `${extractFunction("../../src/components/SettingsPage.tsx", "handleSignOut")}\nhandleSignOut;`,
-    createContext(calls)
-  );
+test(
+  "Settings sign-out ends a live meeting before the account scope is cleared",
+  { skip: "Flowbase-Fork #72: Upstream-Konto-Block samt handleSignOut aus SettingsPage entfernt" },
+  async () => {
+    const calls = [];
+    const handleSignOut = vm.runInNewContext(
+      `${extractFunction("../../src/components/SettingsPage.tsx", "handleSignOut")}\nhandleSignOut;`,
+      createContext(calls)
+    );
 
-  await handleSignOut();
+    await handleSignOut();
 
-  assert.deepEqual(calls, ["meeting stopped", "team spaces purged", "signed out", "reloaded"]);
-});
+    assert.deepEqual(calls, ["meeting stopped", "team spaces purged", "signed out", "reloaded"]);
+  }
+);
 
 test("switching account from an invitation ends a live meeting before signing out", async () => {
   const calls = [];

@@ -91,11 +91,15 @@ import SpaceSyncToastListener from "./notes/SpaceSyncToastListener";
 import { syncService } from "../services/SyncService.js";
 import logger from "../utils/logger";
 import AcceptInvitationModal from "./AcceptInvitationModal";
+import { FLOWBASE_ACCOUNT_REQUEST_EVENT } from "../utils/requestSignIn";
 import JoinYourTeamModal from "./JoinYourTeamModal";
 import {
   consumePendingInvitationToken,
   clearPendingInvitationToken,
 } from "../utils/pendingInvitationToken";
+
+// Flowbase-Fork: kein Upgrade-Dialog (bietet API-Key-/Anbieter-Wechsel an), nur der Hinweis-Toast.
+const FLOWBASE_SHOW_UPGRADE_PROMPT = false;
 
 const platform = getCachedPlatform();
 
@@ -339,7 +343,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
   useEffect(() => {
     const dispose = window.electronAPI?.onLimitReached?.(
       (data: { wordsUsed: number; limit: number }) => {
-        if (!hasShownUpgradePrompt.current) {
+        if (FLOWBASE_SHOW_UPGRADE_PROMPT && !hasShownUpgradePrompt.current) {
           hasShownUpgradePrompt.current = true;
           setLimitData(data);
           setShowUpgradePrompt(true);
@@ -488,6 +492,17 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
     drain(false);
     const cleanup = window.electronAPI?.onShowSettings?.(() => drain(true));
     return () => cleanup?.();
+  }, []);
+
+  // Flowbase-Fork: requestSignIn() öffnet das Flowbase-Konto statt des Upstream-Logins.
+  useEffect(() => {
+    const openAccount = () => {
+      setSettingsSection("account");
+      setSettingsRequest((count) => count + 1);
+      setShowSettings(true);
+    };
+    window.addEventListener(FLOWBASE_ACCOUNT_REQUEST_EVENT, openAccount);
+    return () => window.removeEventListener(FLOWBASE_ACCOUNT_REQUEST_EVENT, openAccount);
   }, []);
 
   // When accessibility is missing on macOS, open the permissions settings page

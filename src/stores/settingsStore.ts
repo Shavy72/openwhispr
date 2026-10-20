@@ -1195,6 +1195,8 @@ export interface SettingsState
   setVoiceAgentKey: (key: string) => Promise<HotkeyRegistrationResult>;
   translationKey: string;
   setTranslationKey: (key: string) => Promise<HotkeyRegistrationResult>;
+  voiceMessageKey: string;
+  setVoiceMessageKey: (key: string) => Promise<HotkeyRegistrationResult>;
   setMeetingHotkeyLayoutMode: (mode: "side-panel" | "full-width") => void;
   setOnboardingUseCases: (useCases: string[]) => void;
   setOnboardingUseCaseNote: (note: string) => void;
@@ -1316,7 +1318,7 @@ function createNumberSetter(key: string) {
 // being persisted. Rolls back to the previous key if registration fails.
 // Resolves to false on failure so optimistic UIs (HotkeyListInput) can revert.
 function createRegisteredHotkeySetter(
-  key: "voiceAgentKey" | "translationKey",
+  key: "voiceAgentKey" | "translationKey" | "voiceMessageKey",
   label: string,
   getRegisterFn: () => ((hotkey: string) => Promise<HotkeyRegistrationResult>) | undefined,
   fallbackSave?: (hotkey: string) => void
@@ -1601,6 +1603,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   meetingKey: readString("meetingKey", ""),
   voiceAgentKey: readString("voiceAgentKey", ""),
   translationKey: readString("translationKey", ""),
+  voiceMessageKey: readString("voiceMessageKey", "Control+Alt+B"),
   onboardingUseCases: readStringArray("onboardingUseCases", []),
   onboardingUseCaseNote: readString("onboardingUseCaseNote", ""),
   spokenLanguages: readStringArray("spokenLanguages", []),
@@ -2331,6 +2334,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     "translationKey",
     "translation hotkey",
     () => window.electronAPI?.updateTranslationHotkey
+  ),
+  setVoiceMessageKey: createRegisteredHotkeySetter(
+    "voiceMessageKey",
+    "voice message hotkey",
+    () => window.electronAPI?.updateVoiceMessageHotkey
   ),
 
   setMeetingHotkeyLayoutMode: (mode: "side-panel" | "full-width") => {

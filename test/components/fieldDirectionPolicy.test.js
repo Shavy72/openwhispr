@@ -76,6 +76,7 @@ const EXPECTED_SHARED_FIELD_DIRECTIONS = {
   "src/components/onboarding/ProviderSetupStep.tsx": ["ltr", "ltr", "ltr", "ltr", "ltr", "ltr"],
   "src/components/settings/DictationAgentSettings.tsx": ["auto"],
   "src/components/settings/EnterpriseCheckoutDialog.tsx": ["inherit"],
+  "src/components/settings/FlowbaseAccountSection.tsx": ["ltr", "ltr"],
   "src/components/settings/ProfileSection.tsx": ["auto", "ltr", "ltr", "ltr"],
   "src/components/settings/WorkspaceDeveloperTab.tsx": ["auto"],
   "src/components/settings/WorkspaceSection.tsx": ["auto"],

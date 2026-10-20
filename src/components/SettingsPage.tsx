@@ -10,7 +10,6 @@ import {
   Mic,
   Shield,
   FolderOpen,
-  LogOut,
   UserCircle,
   Sun,
   Moon,
@@ -30,7 +29,6 @@ import {
   RotateCw,
   BookOpen,
   Copy,
-  Trash2,
   Info,
   MessageSquare,
   FileAudio,
@@ -150,7 +148,6 @@ import {
 } from "../stores/policyRules";
 import { usePolicyModeOptions, usePolicySnapshot } from "../hooks/usePolicy";
 import { usePolicyStore } from "../stores/policyStore";
-import { stopRecording } from "../stores/meetingRecordingStore";
 import { requestSignIn } from "../utils/requestSignIn";
 import { canManageSystemAudioInApp } from "../utils/systemAudioAccess";
 import WorkspaceSection from "./settings/WorkspaceSection";
@@ -158,7 +155,7 @@ import { enterpriseTileCta, type EnterpriseTileCta } from "../lib/workspaceBilli
 import WorkspaceBillingOverview from "./settings/WorkspaceBillingOverview";
 import EnterpriseCheckoutDialog from "./settings/EnterpriseCheckoutDialog";
 import CreateWorkspaceDialog from "./CreateWorkspaceDialog";
-import ProfileSection from "./settings/ProfileSection";
+import FlowbaseAccountSection from "./settings/FlowbaseAccountSection";
 import { formatAmount } from "../utils/formatAmount";
 import { enterpriseProviderName, getTranscriptionProvider } from "../models/ModelRegistry";
 import { useManagedScopeResolution } from "../stores/enterpriseIdentityStore";
@@ -1271,6 +1268,8 @@ export default function SettingsPage({
   const setVoiceAgentKey = useSettingsStore((s) => s.setVoiceAgentKey);
   const translationKey = useSettingsStore((s) => s.translationKey);
   const setTranslationKey = useSettingsStore((s) => s.setTranslationKey);
+  const voiceMessageKey = useSettingsStore((s) => s.voiceMessageKey);
+  const setVoiceMessageKey = useSettingsStore((s) => s.setVoiceMessageKey);
 
   const settingsPolicyState = usePolicySnapshot();
   const agentAllowedByPolicy = isAgentAllowed(settingsPolicyState);
@@ -1507,10 +1506,11 @@ export default function SettingsPage({
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
         },
         t
       ),
-    [meetingKey, voiceAgentKey, translationKey, t]
+    [meetingKey, voiceAgentKey, translationKey, voiceMessageKey, t]
   );
 
   const validateMeetingHotkey = useCallback(
@@ -1521,10 +1521,11 @@ export default function SettingsPage({
           "settingsPage.general.hotkey.title": dictationKey,
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
         },
         t
       ),
-    [dictationKey, voiceAgentKey, translationKey, t]
+    [dictationKey, voiceAgentKey, translationKey, voiceMessageKey, t]
   );
 
   const validateVoiceAgentHotkey = useCallback(
@@ -1535,10 +1536,11 @@ export default function SettingsPage({
           "settingsPage.general.hotkey.title": dictationKey,
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
         },
         t
       ),
-    [dictationKey, meetingKey, translationKey, t]
+    [dictationKey, meetingKey, translationKey, voiceMessageKey, t]
   );
 
   const validateTranslationHotkey = useCallback(
@@ -1549,10 +1551,26 @@ export default function SettingsPage({
           "settingsPage.general.hotkey.title": dictationKey,
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
         },
         t
       ),
-    [dictationKey, meetingKey, voiceAgentKey, t]
+    [dictationKey, meetingKey, voiceAgentKey, voiceMessageKey, t]
+  );
+
+  const validateVoiceMessageHotkey = useCallback(
+    (hotkey: string) =>
+      validateHotkeyForSlot(
+        hotkey,
+        {
+          "settingsPage.general.hotkey.title": dictationKey,
+          "settingsPage.general.meetingHotkey.title": meetingKey,
+          "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
+          "settingsPage.general.translationHotkey.title": translationKey,
+        },
+        t
+      ),
+    [dictationKey, meetingKey, voiceAgentKey, translationKey, t]
   );
 
   const {
@@ -1786,7 +1804,7 @@ export default function SettingsPage({
     });
   }, [isRemovingModels, cachePathHint, showConfirmDialog, showAlertDialog, t]);
 
-  const { isSignedIn, isLoaded, user, refetch } = useAuth();
+  const { isSignedIn, isLoaded, user } = useAuth();
   const {
     canToggleSync: canToggleInsightsSync,
     disableInsightsSync,
@@ -1876,7 +1894,6 @@ export default function SettingsPage({
         year: "numeric",
       })
     : null;
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [eraseDeviceData, setEraseDeviceData] = useState(false);
@@ -1959,33 +1976,6 @@ export default function SettingsPage({
     },
     [usage, toast, t]
   );
-
-  const handleSignOut = useCallback(async () => {
-    setIsSigningOut(true);
-    try {
-      // End a live meeting while its note is still in scope: signing out clears
-      // the account scope, and anything said after that could not be saved.
-      await stopRecording();
-      // Clear account-scoped renderer/session state before ending the session.
-      // Workspace-owned rows remain cached behind their membership boundary.
-      await syncService.purgeTeamSpacesForSignOut();
-      await signOut();
-      window.location.reload();
-    } catch (error) {
-      logger.error("Sign out failed", error, "auth");
-      showAlertDialog({
-        title: t("settingsPage.account.signOut.failedTitle"),
-        description: t("settingsPage.account.signOut.failedDescription"),
-      });
-    } finally {
-      setIsSigningOut(false);
-    }
-  }, [showAlertDialog, t]);
-
-  const handleDeleteAccount = useCallback(() => {
-    setEraseDeviceData(false);
-    setIsDeleteAccountDialogOpen(true);
-  }, []);
 
   const confirmDeleteAccount = useCallback(async () => {
     const accountId = user?.id;
@@ -2183,123 +2173,8 @@ export default function SettingsPage({
   const renderSectionContent = () => {
     switch (activeSection) {
       case "account":
-        return (
-          <div className="space-y-5">
-            {!AUTH_URL ? (
-              <>
-                <SectionHeader
-                  title={t("settingsPage.account.title")}
-                  description={t("settingsPage.account.notConfigured")}
-                />
-                <SettingsPanel>
-                  <SettingsPanelRow>
-                    <SettingsRow
-                      label={t("settingsPage.account.featuresDisabled")}
-                      description={t("settingsPage.account.featuresDisabledDescription")}
-                    >
-                      <Badge variant="warning">{t("settingsPage.account.disabled")}</Badge>
-                    </SettingsRow>
-                  </SettingsPanelRow>
-                </SettingsPanel>
-              </>
-            ) : isLoaded && isSignedIn && user ? (
-              <>
-                <SectionHeader title={t("settingsPage.account.title")} />
-                <ProfileSection
-                  name={user.name || ""}
-                  onSessionRefresh={() => {
-                    void refetch();
-                  }}
-                />
-
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleSignOut}
-                    variant="outline"
-                    disabled={isSigningOut}
-                    size="sm"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
-                  >
-                    <LogOut className="me-1.5 h-3.5 w-3.5" />
-                    {isSigningOut
-                      ? t("settingsPage.account.signOut.signingOut")
-                      : t("settingsPage.account.signOut.signOut")}
-                  </Button>
-                </div>
-
-                <SettingsPanel>
-                  <SettingsPanelRow>
-                    <SettingsRow
-                      label={t("settingsPage.account.deleteAccount.label")}
-                      description={t("settingsPage.account.deleteAccount.labelDescription")}
-                    >
-                      <Button
-                        onClick={handleDeleteAccount}
-                        variant="outline"
-                        disabled={isDeletingAccount}
-                        size="sm"
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive"
-                      >
-                        <Trash2 className="me-1.5 h-3.5 w-3.5" />
-                        {isDeletingAccount
-                          ? t("settingsPage.account.deleteAccount.deleting")
-                          : t("settingsPage.account.deleteAccount.button")}
-                      </Button>
-                    </SettingsRow>
-                  </SettingsPanelRow>
-                </SettingsPanel>
-              </>
-            ) : isLoaded ? (
-              <>
-                <SectionHeader title={t("settingsPage.account.title")} />
-                <SettingsPanel>
-                  <SettingsPanelRow>
-                    <SettingsRow
-                      label={t("settingsPage.account.notSignedIn")}
-                      description={t("settingsPage.account.notSignedInDescription")}
-                    >
-                      <Badge variant="outline">{t("settingsPage.account.offline")}</Badge>
-                    </SettingsRow>
-                  </SettingsPanelRow>
-                </SettingsPanel>
-
-                <div className="rounded-lg border border-primary/20 dark:border-primary/15 bg-primary/3 dark:bg-primary/6 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-md bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-2.5">
-                      <div>
-                        <p className="text-xs font-medium text-foreground">
-                          {t("settingsPage.account.trialCta.title")}
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                          {t("settingsPage.account.trialCta.description")}
-                        </p>
-                      </div>
-                      <Button onClick={requestSignIn} size="sm" className="w-full">
-                        <UserCircle className="me-1.5 h-3.5 w-3.5" />
-                        {t("settingsPage.account.trialCta.button")}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <SectionHeader title={t("settingsPage.account.title")} />
-                <SettingsPanel>
-                  <SettingsPanelRow>
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                    </div>
-                  </SettingsPanelRow>
-                </SettingsPanel>
-              </>
-            )}
-          </div>
-        );
+        // Flowbase-Fork: Flowbase-Konto statt Upstream-Profil/-Login.
+        return <FlowbaseAccountSection />;
 
       case "plansBilling":
         return (
@@ -4125,6 +4000,26 @@ EOF`,
                     onChange={(list) => commitAgentHotkey(setTranslationKey, list)}
                     onClear={() => commitAgentHotkey(setTranslationKey, "")}
                     validate={validateTranslationHotkey}
+                    disabled={isAgentHotkeyCommitting}
+                    maxHotkeys={isUsingNativeShortcut ? 1 : undefined}
+                  />
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
+            {/* Voice Message Hotkey (Kürzel B, Flowbase) */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.voiceMessageHotkey.title")}
+                description={t("settingsPage.general.voiceMessageHotkey.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <HotkeyListInput
+                    value={voiceMessageKey}
+                    onChange={(list) => commitAgentHotkey(setVoiceMessageKey, list)}
+                    onClear={() => commitAgentHotkey(setVoiceMessageKey, "")}
+                    validate={validateVoiceMessageHotkey}
                     disabled={isAgentHotkeyCommitting}
                     maxHotkeys={isUsingNativeShortcut ? 1 : undefined}
                   />

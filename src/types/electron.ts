@@ -2911,6 +2911,36 @@ declare global {
       getVoiceAgentKey?: () => Promise<string>;
       updateTranslationHotkey?: (hotkey: string) => Promise<{ success: boolean; message?: string }>;
       getTranslationKey?: () => Promise<string>;
+      updateVoiceMessageHotkey?: (
+        hotkey: string
+      ) => Promise<{ success: boolean; message?: string }>;
+
+      // Flowbase-Konto + Sprachnachricht (Kürzel B)
+      flowbaseLogin?: (
+        email: string,
+        password: string
+      ) => Promise<{
+        ok: boolean;
+        user?: { name: string; email: string; role: string };
+        message?: string;
+      }>;
+      flowbaseLogout?: () => Promise<{ ok: true }>;
+      flowbaseGetSession?: () => Promise<{
+        loggedIn: boolean;
+        user?: { name: string; email: string; role: string };
+        activeModelId?: string | null;
+      }>;
+      flowbaseListModels?: () => Promise<{
+        ok: boolean;
+        models?: Array<{ id: string; name: string }>;
+        message?: string;
+      }>;
+      flowbaseSetActiveModel?: (
+        modelId: string | null
+      ) => Promise<{ ok: boolean; message?: string }>;
+      onFlowbaseVoiceMessageStatus?: (
+        callback: (status: { state: "working" | "done" | "error"; message: string }) => void
+      ) => () => void;
       createAgentConversation?: (
         title: string,
         noteId?: number | null,

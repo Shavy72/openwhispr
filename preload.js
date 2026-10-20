@@ -1098,6 +1098,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getVoiceAgentKey: () => ipcRenderer.invoke("get-voice-agent-key"),
   updateTranslationHotkey: (hotkey) => ipcRenderer.invoke("update-translation-hotkey", hotkey),
   getTranslationKey: () => ipcRenderer.invoke("get-translation-key"),
+  updateVoiceMessageHotkey: (hotkey) => ipcRenderer.invoke("update-voice-message-hotkey", hotkey),
+
+  // Flowbase-Konto + Sprachnachricht (Kürzel B)
+  flowbaseLogin: (email, password) => ipcRenderer.invoke("flowbase-login", email, password),
+  flowbaseLogout: () => ipcRenderer.invoke("flowbase-logout"),
+  flowbaseGetSession: () => ipcRenderer.invoke("flowbase-get-session"),
+  flowbaseListModels: () => ipcRenderer.invoke("flowbase-list-models"),
+  flowbaseSetActiveModel: (modelId) => ipcRenderer.invoke("flowbase-set-active-model", modelId),
+  onFlowbaseVoiceMessageStatus: registerListener(
+    "flowbase-voice-message-status",
+    (callback) => (_event, status) => callback(status)
+  ),
   onPreviewText: registerListener("preview-text", (callback) => (_event, text) => callback(text)),
   onPreviewAppend: registerListener(
     "preview-append",

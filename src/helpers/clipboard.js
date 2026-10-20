@@ -11,6 +11,14 @@ const { writeFileToClipboard } = require("./fileClipboard");
 
 // Time the target app needs to read the pasted file list after Ctrl+V.
 const FILE_PASTE_SETTLE_MS = 150;
+const FIELD_COPY_SETTLE_MS = 150;
+const HOTKEY_RELEASE_WAIT_MS = 300;
+// Key codes on macOS (layout-independent like the paste's key code 9 = V).
+const FIELD_KEY_COMBOS = {
+  selectAll: { nircmd: "ctrl+a", sendKeys: "^a", mac: "key code 0 using command down" },
+  copy: { nircmd: "ctrl+c", sendKeys: "^c", mac: "key code 8 using command down" },
+  delete: { nircmd: "delete", sendKeys: "{DEL}", mac: "key code 51" },
+};
 const CACHE_TTL_MS = 30000;
 
 // isTrustedAccessibilityClient() is a cheap synchronous syscall, so the cache
@@ -1010,6 +1018,97 @@ class ClipboardManager {
       // dictation right after could overwrite the file list before the paste lands.
       await new Promise((resolve) => setTimeout(resolve, FILE_PASTE_SETTLE_MS));
       return result;
+    });
+  }
+
+  /**
+   * Reads the whole text of the focused input field: select all + copy via the
+   * same key simulation the paste path uses (nircmd/PowerShell on Windows,
+   * osascript on macOS). The clipboard is saved before and restored after, so
+   * the user's clipboard survives. Returns "" for an empty field. The selection
+   * stays in place, so a following clearFocusedField() only removes this text.
+   */
+  async readFocusedFieldText() {
+    this._assertKeySimulationPlatform();
+    return this._runClipboardOperation(async () => {
+      const original = this._saveClipboard();
+      try {
+        // Cleared first: in an empty field Ctrl+C copies nothing, and the old
+        // clipboard text would otherwise be read as the field's text.
+        clipboard.clear();
+        await this._awaitHotkeyRelease();
+        await this._sendKeyCombo("selectAll");
+        await this._sendKeyCombo("copy");
+        await new Promise((resolve) => setTimeout(resolve, FIELD_COPY_SETTLE_MS));
+        return clipboard.readText();
+      } finally {
+        this._restoreClipboard(original);
+      }
+    });
+  }
+
+  /** Empties the focused input field (select all + delete). */
+  async clearFocusedField() {
+    this._assertKeySimulationPlatform();
+    return this._runClipboardOperation(async () => {
+      await this._sendKeyCombo("selectAll");
+      await this._sendKeyCombo("delete");
+    });
+  }
+
+  _assertKeySimulationPlatform() {
+    if (process.platform !== "win32" && process.platform !== "darwin") {
+      throw new Error("Field key simulation is only supported on Windows and macOS");
+    }
+  }
+
+  // ponytail: fixed wait for the user to let go of the hotkey modifiers (a held
+  // Alt would turn Ctrl+A into Ctrl+Alt+A); real release detection if it misfires.
+  _awaitHotkeyRelease() {
+    return new Promise((resolve) => setTimeout(resolve, HOTKEY_RELEASE_WAIT_MS));
+  }
+
+  _sendKeyCombo(name) {
+    const combo = FIELD_KEY_COMBOS[name];
+    let command;
+    let args;
+    if (process.platform === "darwin") {
+      command = "osascript";
+      args = ["-e", `tell application "System Events" to ${combo.mac}`];
+    } else {
+      const nircmdPath = this.getNircmdPath();
+      if (nircmdPath) {
+        command = nircmdPath;
+        args = ["sendkeypress", combo.nircmd];
+      } else {
+        command = "powershell.exe";
+        args = [
+          "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-Command",
+          `[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');[System.Windows.Forms.SendKeys]::SendWait('${combo.sendKeys}')`,
+        ];
+      }
+    }
+    return new Promise((resolve, reject) => {
+      const proc = spawn(command, args, { windowsHide: true });
+      const timeoutId = setTimeout(() => {
+        killProcess(proc, "SIGKILL");
+        reject(new Error(`Key simulation "${name}" timed out`));
+      }, 3000);
+      proc.on("error", (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+      proc.on("close", (code) => {
+        clearTimeout(timeoutId);
+        if (code === 0) resolve();
+        else reject(new Error(`Key simulation "${name}" failed (code ${code})`));
+      });
     });
   }
 

@@ -25,6 +25,7 @@ const SLOT_LABEL_KEYS = {
   voiceAgent: "settingsPage.general.voiceAgentHotkey.title",
   translation: "settingsPage.general.translationHotkey.title",
   meeting: "settingsPage.general.meetingHotkey.title",
+  voiceMessage: "settingsPage.general.voiceMessageHotkey.title",
 };
 
 // KDE registration failure reasons — reuse existing i18n keys

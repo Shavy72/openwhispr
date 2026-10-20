@@ -22,6 +22,7 @@ import { stopRecording } from "../stores/meetingRecordingStore";
 import { afterWorkspaceJoined } from "../services/membershipActions";
 import { useToast } from "./ui/useToast";
 import SignInDialog from "./SignInDialog";
+import { requestSignIn } from "../utils/requestSignIn";
 import { formatList } from "../lib/formatList";
 import type { InvitationPreview } from "../types/electron";
 
@@ -75,7 +76,8 @@ export default function AcceptInvitationModal({ token, onClose, onAccepted }: Pr
     if (!token) return;
     if (!isSignedIn) {
       storePendingInvitationToken(token);
-      setSignInOpen(true);
+      // Flowbase-Fork: kein Upstream-Login, stattdessen Flowbase-Konto öffnen.
+      requestSignIn();
       return;
     }
     setAccepting(true);

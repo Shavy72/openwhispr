@@ -20,6 +20,8 @@ const SECRET_KEYS = [
   "VERTEX_API_KEY",
 ];
 
+const DEFAULT_VOICE_MESSAGE_KEY = "Control+Alt+B";
+
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
 
 const PERSISTED_KEYS = [
@@ -37,6 +39,7 @@ const PERSISTED_KEYS = [
   "DICTATION_KEY",
   "VOICE_AGENT_KEY",
   "TRANSLATION_KEY",
+  "VOICE_MESSAGE_KEY",
   "MEETING_KEY",
   "ACTIVATION_MODE",
   "FLOATING_ICON_AUTO_HIDE",
@@ -411,6 +414,18 @@ class EnvironmentManager {
 
   saveTranslationKey(key) {
     const result = this._saveKey("TRANSLATION_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  // Kürzel B (Sprachnachricht). Leere Werte werden nicht gespeichert, darum
+  // fällt ein geleertes Kürzel nach dem Neustart auf den Standard zurück.
+  getVoiceMessageKey() {
+    return this._getKey("VOICE_MESSAGE_KEY") || DEFAULT_VOICE_MESSAGE_KEY;
+  }
+
+  saveVoiceMessageKey(key) {
+    const result = this._saveKey("VOICE_MESSAGE_KEY", key);
     this.saveAllKeysToEnvFile().catch(() => {});
     return result;
   }

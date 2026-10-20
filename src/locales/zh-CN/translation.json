@@ -2179,6 +2179,10 @@
       "translationHotkey": {
         "title": "翻译快捷键",
         "description": "用任何语言听写——粘贴的文本会自动翻译"
+      },
+      "voiceMessageHotkey": {
+        "title": "Shortcut B – Text → Voice message",
+        "description": "Type text into the chat field, press the shortcut – the voice message in your model's voice replaces the text."
       }
     },
     "permissions": {
@@ -3769,6 +3773,11 @@
       "cleanupFailed": {
         "title": "清理失败",
         "description": "你的听写已直接粘贴，未经 AI 清理。"
+      },
+      "voiceMessage": {
+        "working": "Creating voice message …",
+        "done": "Voice message inserted.",
+        "errorTitle": "Voice message failed"
       }
     },
     "mic": {
@@ -4970,5 +4979,25 @@
     "permissionDenied": "已拒绝",
     "permissionRestricted": "受限",
     "permissionNotDetermined": "尚未请求"
+  },
+  "flowbaseAccount": {
+    "title": "Flowbase account",
+    "loginDescription": "Sign in with your Flowbase account.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signOut": "Sign out",
+    "errors": {
+      "unexpected": "Sign-in failed. Please try again."
+    },
+    "models": {
+      "title": "Your models",
+      "empty": "No model has been assigned to you yet. Please contact your admin.",
+      "noneActive": "Choose a model so shortcut B works.",
+      "active": "Active",
+      "select": "Click to activate"
+    },
+    "continue": "Continue"
   }
 }

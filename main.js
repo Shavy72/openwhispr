@@ -297,6 +297,11 @@ const TrayManager = require("./src/helpers/tray");
 const dockManager = require("./src/helpers/dockManager");
 const autoStart = require("./src/helpers/autoStart");
 const IPCHandlers = require("./src/helpers/ipcHandlers");
+const {
+  createVoiceMessageShortcut,
+  VOICE_MESSAGE_STATUS_EVENT,
+} = require("./src/helpers/voiceMessageShortcut");
+const flowbaseClient = require("./src/helpers/flowbaseClient");
 const CliBridge = require("./src/helpers/cliBridge");
 const UpdateManager = require("./src/updater");
 const GlobeKeyManager = require("./src/helpers/globeKeyManager");
@@ -1341,6 +1346,47 @@ async function startApp() {
       );
     }
     hotkeyManager.notifyRestoreFailures(savedTranslationKey, result);
+  }
+
+  // Kürzel B: Feldtext → Sprachnachricht (MP3 in Model-Stimme) über Flowbase.
+  flowbaseClient.cleanupTempVoiceFiles();
+  const voiceMessageShortcut = createVoiceMessageShortcut({
+    readFieldText: () => clipboardManager.readFocusedFieldText(),
+    clearField: () => clipboardManager.clearFocusedField(),
+    pasteFile: (filePath) => clipboardManager.pasteFile(filePath),
+    makeVoiceMessage: (text) => flowbaseClient.makeVoiceMessage(text),
+    notify: (status) => {
+      for (const browserWindow of BrowserWindow.getAllWindows()) {
+        if (!browserWindow.isDestroyed()) {
+          browserWindow.webContents.send(VOICE_MESSAGE_STATUS_EVENT, status);
+        }
+      }
+    },
+  });
+  const isVoiceMessagePress = createHotkeyRepeatGate();
+  const voiceMessageHotkeyCallback = () => {
+    if (!isVoiceMessagePress()) return;
+    voiceMessageShortcut.run().catch((error) => {
+      debugLogger.error("Voice message shortcut failed", { error: error.message }, "hotkey");
+    });
+  };
+  windowManager._voiceMessageHotkeyCallback = voiceMessageHotkeyCallback;
+
+  const savedVoiceMessageKey = environmentManager.getVoiceMessageKey?.() || "";
+  if (savedVoiceMessageKey) {
+    const result = await hotkeyManager.registerSlot(
+      "voiceMessage",
+      savedVoiceMessageKey,
+      voiceMessageHotkeyCallback
+    );
+    if (!result.success) {
+      debugLogger.warn(
+        "Failed to restore voice message hotkey",
+        { hotkey: savedVoiceMessageKey },
+        "hotkey"
+      );
+    }
+    hotkeyManager.notifyRestoreFailures(savedVoiceMessageKey, result);
   }
 
   // Set up meeting mode hotkey
