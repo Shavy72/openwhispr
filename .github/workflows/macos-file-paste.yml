@@ -23,6 +23,20 @@ jobs:
 
       - run: npm ci
 
+      - name: Diagnose pasteboard (temporary)
+        continue-on-error: true
+        run: |
+          set -x
+          echo hallo | pbcopy; pbpaste; osascript -e 'clipboard info'
+          F="$PWD/assets/test/beispiel.mp3"
+          node -e 'require("./src/helpers/fileClipboard").writeFileToClipboard(process.argv[1]).then(()=>console.log("written"),e=>{console.error(e);process.exit(1)})' "$F"
+          osascript -e 'clipboard info'
+          osascript -l JavaScript -e 'ObjC.import("AppKit"); JSON.stringify(ObjC.deepUnwrap($.NSPasteboard.generalPasteboard.types))'
+          osascript -l JavaScript -e 'ObjC.import("AppKit"); function run(a){const pb=$.NSPasteboard.generalPasteboard; pb.clearContents; const ok=pb.writeObjects($.NSArray.arrayWithObject($.NSURL.fileURLWithPath(a[0]))); return "ok="+ok+" count="+pb.changeCount+" types="+JSON.stringify(ObjC.deepUnwrap(pb.types));}' "$F"
+          osascript -e 'clipboard info'
+          osascript -l JavaScript -e 'ObjC.import("AppKit"); function run(a){const pb=$.NSPasteboard.generalPasteboard; pb.clearContents(); const ok=pb.writeObjects($.NSArray.arrayWithObject($.NSURL.fileURLWithPath(a[0]))); return "ok="+ok+" types="+JSON.stringify(ObjC.deepUnwrap(pb.types));}' "$F"
+          osascript -e 'clipboard info'
+
       - name: File paste tests (real NSPasteboard write + read-back)
         run: node --import tsx --test test/helpers/fileClipboard.test.js test/helpers/pasteFile.test.js test/helpers/clipboardRestore.test.js
 
