@@ -7,7 +7,7 @@ const os = require("os");
 const debugLogger = require("./debugLogger");
 const { getLinuxSessionInfo } = require("./linuxSession");
 const { getCosmicActiveAppId } = require("./cosmicToplevel");
-const { writeFileDropList } = require("./fileClipboard");
+const { writeFileToClipboard } = require("./fileClipboard");
 
 // Time the target app needs to read the pasted file list after Ctrl+V.
 const FILE_PASTE_SETTLE_MS = 150;
@@ -978,20 +978,36 @@ class ClipboardManager {
 
   /**
    * Pastes a file (not text) into the focused app: puts it on the clipboard as
-   * a FileDropList, then fires Ctrl+V through the same Windows paste path as
-   * dictation. Windows only. The file stays on the clipboard afterwards (no
-   * restore, since the text-based restore cannot bring back a file list).
+   * a file, then fires Ctrl+V / Cmd+V through the same paste path as dictation.
+   * Windows and macOS. The file stays on the clipboard afterwards (no restore,
+   * since the text-based restore cannot bring back a file list). On macOS
+   * without Accessibility permission the app's permission dialog is shown and
+   * the call rejects with code ACCESSIBILITY_PERMISSION_REQUIRED.
    */
   async pasteFile(absPath) {
-    if (process.platform !== "win32") {
-      throw new Error("pasteFile is only supported on Windows");
+    const platform = process.platform;
+    if (platform !== "win32" && platform !== "darwin") {
+      throw new Error("pasteFile is only supported on Windows and macOS");
     }
     return this._runClipboardOperation(async () => {
-      await writeFileDropList(absPath);
+      await writeFileToClipboard(absPath);
       this.safeLog("📎 File copied to clipboard:", absPath);
-      const result = await this.pasteWindows(null, {});
+      let result;
+      if (platform === "darwin") {
+        if (!(await this.checkAccessibilityPermissions())) {
+          throw Object.assign(
+            new Error(
+              "Accessibility permissions required for automatic pasting. The file has been copied to clipboard - please paste manually with Cmd+V."
+            ),
+            { code: "ACCESSIBILITY_PERMISSION_REQUIRED", clipboardCopied: true }
+          );
+        }
+        result = await this.pasteMacOS(null, {});
+      } else {
+        result = await this.pasteWindows(null, {});
+      }
       // Queue must stay held until the target has read the clipboard, or a
-      // dictation right after could overwrite the file list before Ctrl+V lands.
+      // dictation right after could overwrite the file list before the paste lands.
       await new Promise((resolve) => setTimeout(resolve, FILE_PASTE_SETTLE_MS));
       return result;
     });

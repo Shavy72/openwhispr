@@ -1,0 +1,36 @@
+name: macOS File Paste
+
+# Proves on a real Mac that a file lands on the pasteboard as a file URL
+# (fileClipboard.js darwin branch) and that the paste tests pass.
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/datei-einfuegen-mac]
+
+permissions:
+  contents: read
+
+jobs:
+  file-paste:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: File paste tests (real NSPasteboard write + read-back)
+        run: node --import tsx --test test/helpers/fileClipboard.test.js test/helpers/pasteFile.test.js test/helpers/clipboardRestore.test.js
+
+      - name: Sample MP3 on the pasteboard, list pasteboard types
+        run: |
+          node -e 'require("./src/helpers/fileClipboard").writeFileToClipboard(require("path").resolve("assets/test/beispiel.mp3")).then(()=>console.log("written"),e=>{console.error(e);process.exit(1)})'
+          osascript -l JavaScript -e 'ObjC.import("AppKit"); ObjC.deepUnwrap($.NSPasteboard.generalPasteboard.types)'
+          osascript -l JavaScript -e 'ObjC.import("AppKit"); $.NSPasteboard.generalPasteboard.readObjectsForClassesOptions($.NSArray.arrayWithObject($.NSURL), $()).objectAtIndex(0).path.js'
+
+      - name: Full test suite
+        run: npm test

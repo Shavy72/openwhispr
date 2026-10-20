@@ -709,11 +709,11 @@ function registerSidecars() {
 
 // Test hotkey for the file-paste building block: pastes a bundled sample MP3 as
 // a file into the focused app. Packaged builds ship it via extraResources
-// (outside the asar), because PowerShell needs a real file on disk.
+// (outside the asar), because PowerShell/osascript need a real file on disk.
 const TEST_FILE_PASTE_HOTKEY = "Control+Alt+Shift+M";
 
 function registerTestFilePasteHotkey() {
-  if (process.platform !== "win32") return;
+  if (process.platform !== "win32" && process.platform !== "darwin") return;
   const samplePath = app.isPackaged
     ? path.join(process.resourcesPath, "test-assets", "beispiel.mp3")
     : path.join(__dirname, "assets", "test", "beispiel.mp3");
