@@ -91,19 +91,17 @@ test(
       const target = path.join(folder, "beispiel.mp3");
       fs.copyFileSync(path.join(__dirname, "../../assets/test/beispiel.mp3"), target);
       await writeFilePasteboard(target);
-      const readBack = `ObjC.import("AppKit");
-function run() {
-  const pb = $.NSPasteboard.generalPasteboard;
-  const types = ObjC.deepUnwrap(pb.types);
-  const urls = pb.readObjectsForClassesOptions($.NSArray.arrayWithObject($.NSURL), $());
-  return JSON.stringify({ types, path: urls.count > 0 ? urls.objectAtIndex(0).path.js : null });
-}`;
-      const out = JSON.parse(
-        execFileSync("osascript", ["-l", "JavaScript", "-e", readBack], { encoding: "utf8" })
-      );
-      console.log("pasteboard:", JSON.stringify(out));
-      assert.ok(out.types.includes("public.file-url"), `types: ${out.types}`);
-      assert.equal(fs.realpathSync(out.path), fs.realpathSync(target));
+      // AppleScript read-back: "clipboard info" lists the formats, «class furl» is
+      // the file URL type Finder's Copy produces.
+      const info = execFileSync("osascript", ["-e", "clipboard info"], { encoding: "utf8" });
+      const pasted = execFileSync(
+        "osascript",
+        ["-e", "POSIX path of (the clipboard as «class furl»)"],
+        { encoding: "utf8" }
+      ).trim();
+      console.log("pasteboard:", info.trim(), "|", pasted);
+      assert.match(info, /furl/);
+      assert.equal(fs.realpathSync(pasted), fs.realpathSync(target));
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
