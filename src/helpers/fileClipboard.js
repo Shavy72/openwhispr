@@ -4,16 +4,23 @@ const path = require("path");
 
 const WRITE_TIMEOUT_MS = 5000;
 
-// JXA (JavaScript for Automation) run via osascript: does what Finder's "Copy"
-// does — writes an NSURL file URL to the general pasteboard. The path arrives
-// as argv[0], never inside this string.
+// JXA (JavaScript for Automation) run via osascript: puts the file on the
+// general pasteboard the way Finder's "Copy" does (file URL + legacy filename
+// list). The data is written eagerly — writeObjects(NSURL) only promises it,
+// and the promise dies with this short-lived osascript process. The path
+// arrives as argv[0], never inside this string.
 const MAC_PASTEBOARD_SCRIPT = `ObjC.import("AppKit");
 function run(argv) {
+  const url = $.NSURL.fileURLWithPath(argv[0]);
   const pb = $.NSPasteboard.generalPasteboard;
   pb.clearContents;
-  const url = $.NSURL.fileURLWithPath(argv[0]);
-  if (!pb.writeObjects($.NSArray.arrayWithObject(url))) {
-    throw new Error("NSPasteboard writeObjects failed");
+  const okUrl = pb.setStringForType(url.absoluteString, "public.file-url");
+  const okNames = pb.setPropertyListForType(
+    $.NSArray.arrayWithObject(url.path),
+    "NSFilenamesPboardType"
+  );
+  if (!okUrl || !okNames) {
+    throw new Error("NSPasteboard write failed");
   }
 }`;
 

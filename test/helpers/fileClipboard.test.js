@@ -67,6 +67,7 @@ test("macPasteboardArgs passes the path unchanged as its own argv entry", () => 
     assert.equal(args[3].includes(p), false);
   }
   assert.match(MAC_PASTEBOARD_SCRIPT, /fileURLWithPath\(argv\[0\]\)/);
+  assert.match(MAC_PASTEBOARD_SCRIPT, /"public\.file-url"/);
 });
 
 test("writeFilePasteboard rejects outside macOS", { skip: isMac }, async () => {
