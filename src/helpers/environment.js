@@ -21,6 +21,14 @@ const SECRET_KEYS = [
 ];
 
 const DEFAULT_VOICE_MESSAGE_KEY = "Control+Alt+B";
+const DEFAULT_FLOWBASE_TEXT_KEY = "Control+Alt+A";
+const DEFAULT_FLOWBASE_VOICE_KEY = "Control+Alt+C";
+// Kürzel, deren leerer Wert „bewusst aus“ bedeutet und darum mitgespeichert wird.
+const CLEARABLE_HOTKEY_KEYS = new Set([
+  "VOICE_MESSAGE_KEY",
+  "FLOWBASE_TEXT_KEY",
+  "FLOWBASE_VOICE_KEY",
+]);
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
 
@@ -40,6 +48,8 @@ const PERSISTED_KEYS = [
   "VOICE_AGENT_KEY",
   "TRANSLATION_KEY",
   "VOICE_MESSAGE_KEY",
+  "FLOWBASE_TEXT_KEY",
+  "FLOWBASE_VOICE_KEY",
   "MEETING_KEY",
   "ACTIVATION_MODE",
   "FLOATING_ICON_AUTO_HIDE",
@@ -238,7 +248,7 @@ class EnvironmentManager {
     let envContent = "# OpenWhispr Environment Variables\n";
     for (const key of PERSISTED_KEYS) {
       if (stripSecrets && SECRET_KEY_SET.has(key)) continue;
-      if (process.env[key]) {
+      if (process.env[key] || (CLEARABLE_HOTKEY_KEYS.has(key) && process.env[key] === "")) {
         envContent += `${key}=${process.env[key]}\n`;
       }
     }
@@ -418,16 +428,47 @@ class EnvironmentManager {
     return result;
   }
 
-  // Kürzel B (Sprachnachricht). Leere Werte werden nicht gespeichert, darum
-  // fällt ein geleertes Kürzel nach dem Neustart auf den Standard zurück.
+  // Kürzel A (Diktat über Flowbase), B (Sprachnachricht), C (Sprechen →
+  // Sprachnachricht). Ein geleertes Kürzel wird als "" gespeichert und bleibt
+  // nach dem Neustart aus; der Standard gilt nur, solange es nie gesetzt wurde.
+  _getFlowbaseHotkey(envVarName, fallback) {
+    return process.env[envVarName] ?? fallback;
+  }
+
+  _saveFlowbaseHotkey(envVarName, key) {
+    process.env[envVarName] = key || "";
+    this.saveAllKeysToEnvFile().catch((error) => {
+      debugLogger.error(
+        "Failed to persist hotkey",
+        { key: envVarName, error: error?.message },
+        "environment"
+      );
+    });
+    return { success: true };
+  }
+
   getVoiceMessageKey() {
-    return this._getKey("VOICE_MESSAGE_KEY") || DEFAULT_VOICE_MESSAGE_KEY;
+    return this._getFlowbaseHotkey("VOICE_MESSAGE_KEY", DEFAULT_VOICE_MESSAGE_KEY);
   }
 
   saveVoiceMessageKey(key) {
-    const result = this._saveKey("VOICE_MESSAGE_KEY", key);
-    this.saveAllKeysToEnvFile().catch(() => {});
-    return result;
+    return this._saveFlowbaseHotkey("VOICE_MESSAGE_KEY", key);
+  }
+
+  getFlowbaseTextKey() {
+    return this._getFlowbaseHotkey("FLOWBASE_TEXT_KEY", DEFAULT_FLOWBASE_TEXT_KEY);
+  }
+
+  saveFlowbaseTextKey(key) {
+    return this._saveFlowbaseHotkey("FLOWBASE_TEXT_KEY", key);
+  }
+
+  getFlowbaseVoiceKey() {
+    return this._getFlowbaseHotkey("FLOWBASE_VOICE_KEY", DEFAULT_FLOWBASE_VOICE_KEY);
+  }
+
+  saveFlowbaseVoiceKey(key) {
+    return this._saveFlowbaseHotkey("FLOWBASE_VOICE_KEY", key);
   }
 
   getMeetingKey() {

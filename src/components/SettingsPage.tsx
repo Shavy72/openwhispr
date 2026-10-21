@@ -1270,6 +1270,10 @@ export default function SettingsPage({
   const setTranslationKey = useSettingsStore((s) => s.setTranslationKey);
   const voiceMessageKey = useSettingsStore((s) => s.voiceMessageKey);
   const setVoiceMessageKey = useSettingsStore((s) => s.setVoiceMessageKey);
+  const flowbaseTextKey = useSettingsStore((s) => s.flowbaseTextKey);
+  const setFlowbaseTextKey = useSettingsStore((s) => s.setFlowbaseTextKey);
+  const flowbaseVoiceKey = useSettingsStore((s) => s.flowbaseVoiceKey);
+  const setFlowbaseVoiceKey = useSettingsStore((s) => s.setFlowbaseVoiceKey);
 
   const settingsPolicyState = usePolicySnapshot();
   const agentAllowedByPolicy = isAgentAllowed(settingsPolicyState);
@@ -1507,10 +1511,20 @@ export default function SettingsPage({
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.translationHotkey.title": translationKey,
           "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
         },
         t
       ),
-    [meetingKey, voiceAgentKey, translationKey, voiceMessageKey, t]
+    [
+      meetingKey,
+      voiceAgentKey,
+      translationKey,
+      voiceMessageKey,
+      flowbaseTextKey,
+      flowbaseVoiceKey,
+      t,
+    ]
   );
 
   const validateMeetingHotkey = useCallback(
@@ -1522,10 +1536,20 @@ export default function SettingsPage({
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.translationHotkey.title": translationKey,
           "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
         },
         t
       ),
-    [dictationKey, voiceAgentKey, translationKey, voiceMessageKey, t]
+    [
+      dictationKey,
+      voiceAgentKey,
+      translationKey,
+      voiceMessageKey,
+      flowbaseTextKey,
+      flowbaseVoiceKey,
+      t,
+    ]
   );
 
   const validateVoiceAgentHotkey = useCallback(
@@ -1537,10 +1561,20 @@ export default function SettingsPage({
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.translationHotkey.title": translationKey,
           "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
         },
         t
       ),
-    [dictationKey, meetingKey, translationKey, voiceMessageKey, t]
+    [
+      dictationKey,
+      meetingKey,
+      translationKey,
+      voiceMessageKey,
+      flowbaseTextKey,
+      flowbaseVoiceKey,
+      t,
+    ]
   );
 
   const validateTranslationHotkey = useCallback(
@@ -1552,10 +1586,12 @@ export default function SettingsPage({
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
         },
         t
       ),
-    [dictationKey, meetingKey, voiceAgentKey, voiceMessageKey, t]
+    [dictationKey, meetingKey, voiceAgentKey, voiceMessageKey, flowbaseTextKey, flowbaseVoiceKey, t]
   );
 
   const validateVoiceMessageHotkey = useCallback(
@@ -1567,10 +1603,47 @@ export default function SettingsPage({
           "settingsPage.general.meetingHotkey.title": meetingKey,
           "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
           "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
         },
         t
       ),
-    [dictationKey, meetingKey, voiceAgentKey, translationKey, t]
+    [dictationKey, meetingKey, voiceAgentKey, translationKey, flowbaseTextKey, flowbaseVoiceKey, t]
+  );
+
+  // Kürzel A / C (Flowbase): dürfen mit keinem anderen Kürzel kollidieren.
+  const validateFlowbaseTextHotkey = useCallback(
+    (hotkey: string) =>
+      validateHotkeyForSlot(
+        hotkey,
+        {
+          "settingsPage.general.hotkey.title": dictationKey,
+          "settingsPage.general.meetingHotkey.title": meetingKey,
+          "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
+          "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseVoiceHotkey.title": flowbaseVoiceKey,
+        },
+        t
+      ),
+    [dictationKey, meetingKey, voiceAgentKey, translationKey, voiceMessageKey, flowbaseVoiceKey, t]
+  );
+
+  const validateFlowbaseVoiceHotkey = useCallback(
+    (hotkey: string) =>
+      validateHotkeyForSlot(
+        hotkey,
+        {
+          "settingsPage.general.hotkey.title": dictationKey,
+          "settingsPage.general.meetingHotkey.title": meetingKey,
+          "settingsPage.general.voiceAgentHotkey.title": voiceAgentKey,
+          "settingsPage.general.translationHotkey.title": translationKey,
+          "settingsPage.general.voiceMessageHotkey.title": voiceMessageKey,
+          "settingsPage.general.flowbaseTextHotkey.title": flowbaseTextKey,
+        },
+        t
+      ),
+    [dictationKey, meetingKey, voiceAgentKey, translationKey, voiceMessageKey, flowbaseTextKey, t]
   );
 
   const {
@@ -4007,6 +4080,26 @@ EOF`,
               </SettingsPanel>
             </div>
 
+            {/* Kürzel A (Diktat über Flowbase) */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.flowbaseTextHotkey.title")}
+                description={t("settingsPage.general.flowbaseTextHotkey.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <HotkeyListInput
+                    value={flowbaseTextKey}
+                    onChange={(list) => commitAgentHotkey(setFlowbaseTextKey, list)}
+                    onClear={() => commitAgentHotkey(setFlowbaseTextKey, "")}
+                    validate={validateFlowbaseTextHotkey}
+                    disabled={isAgentHotkeyCommitting}
+                    maxHotkeys={isUsingNativeShortcut ? 1 : undefined}
+                  />
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
             {/* Voice Message Hotkey (Kürzel B, Flowbase) */}
             <div>
               <SectionHeader
@@ -4020,6 +4113,26 @@ EOF`,
                     onChange={(list) => commitAgentHotkey(setVoiceMessageKey, list)}
                     onClear={() => commitAgentHotkey(setVoiceMessageKey, "")}
                     validate={validateVoiceMessageHotkey}
+                    disabled={isAgentHotkeyCommitting}
+                    maxHotkeys={isUsingNativeShortcut ? 1 : undefined}
+                  />
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
+            {/* Kürzel C (Sprechen → Sprachnachricht, Flowbase) */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.flowbaseVoiceHotkey.title")}
+                description={t("settingsPage.general.flowbaseVoiceHotkey.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <HotkeyListInput
+                    value={flowbaseVoiceKey}
+                    onChange={(list) => commitAgentHotkey(setFlowbaseVoiceKey, list)}
+                    onClear={() => commitAgentHotkey(setFlowbaseVoiceKey, "")}
+                    validate={validateFlowbaseVoiceHotkey}
                     disabled={isAgentHotkeyCommitting}
                     maxHotkeys={isUsingNativeShortcut ? 1 : undefined}
                   />

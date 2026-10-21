@@ -2477,6 +2477,14 @@
       "voiceMessageHotkey": {
         "title": "Shortcut B – Text → Voice message",
         "description": "Type text into the chat field, press the shortcut – the voice message in your model's voice replaces the text."
+      },
+      "flowbaseTextHotkey": {
+        "title": "Shortcut A – Dictation via Flowbase",
+        "description": "Press the shortcut, speak, press again – Flowbase turns it into text and inserts it into the field. Then use shortcut B for the voice message."
+      },
+      "flowbaseVoiceHotkey": {
+        "title": "Shortcut C – Speech → Voice message",
+        "description": "Press the shortcut, speak, press again – Flowbase voices the recording in your model's voice and inserts the voice message."
       }
     },
     "permissions": {

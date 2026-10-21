@@ -714,6 +714,8 @@ class AudioManager {
     this.voiceAgentRequested = false;
     this.translationRequested = false;
     this.translationApplied = false;
+    // Kürzel A ("text") / C ("voice"): Aufnahme geht an Flowbase statt an die Transkription.
+    this.flowbaseKind = null;
     this.pendingSelectionEdit = null;
     this.pendingAssistantConversation = null;
     this.pendingCleanupFailure = null;
@@ -1010,6 +1012,33 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   setTranslationRequested(requested) {
     this.translationRequested = requested;
     this.translationApplied = false;
+  }
+
+  setFlowbaseKind(kind) {
+    this.flowbaseKind = kind === "text" || kind === "voice" ? kind : null;
+  }
+
+  // Kürzel A/C: Flowbase braucht die ganze Aufnahme als Datei. Fehler meldet
+  // der Main-Prozess als Toast; Text von A läuft danach wie ein normales Diktat.
+  async _processFlowbaseRecording(audioBlob, pipeline, wasCancelled) {
+    const kind = this.flowbaseKind;
+    this._cancelActivationCapture(pipeline.activationCapture);
+    logger.info("Flowbase recording upload", { kind, blobSize: audioBlob.size }, "audio");
+    const result = await window.electronAPI.flowbaseProcessRecording(
+      kind,
+      await audioBlob.arrayBuffer(),
+      audioBlob.type
+    );
+    if (wasCancelled()) return;
+    logger.info("Flowbase recording result", { kind, ok: !!result?.ok }, "audio");
+    if (kind === "text" && result?.ok && result.text) {
+      pipeline.resultHandled = this.onTranscriptionComplete?.({
+        success: true,
+        text: result.text,
+        rawText: result.text,
+        source: "flowbase",
+      });
+    }
   }
 
   // In translation mode the STT hint is the configured source language, not
@@ -2182,6 +2211,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     }
 
     try {
+      if (this.flowbaseKind) {
+        await this._processFlowbaseRecording(audioBlob, pipeline, wasCancelled);
+        return;
+      }
       const useLocalWhisper = settings.useLocalWhisper;
       const localProvider = settings.localTranscriptionProvider;
       const whisperModel = settings.whisperModel;
@@ -4689,6 +4722,8 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   }
 
   shouldUseStreaming(isSignedInOverride) {
+    // Kürzel A/C laden die fertige Aufnahme hoch, darum immer Batch.
+    if (this.flowbaseKind) return false;
     const s = getSettings();
     if (s.useLocalWhisper) return false;
 

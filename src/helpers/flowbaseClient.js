@@ -6,6 +6,8 @@
  * Klartexte. Aufrufer sehen nur:
  *   login, logout, getSession, listModels, setActiveModel, getActiveModel,
  *   makeVoiceMessage(text) → { ok: true, filePath } | { ok: false, message }
+ *   makeVoiceMessageFromAudio(audio, mimeType) → { ok: true, filePath } | { ok: false, message }
+ *   transcribeAudio(audio, mimeType) → { ok: true, text } | { ok: false, message }
  *
  * Alle HTTP-Calls laufen hier im Main-Prozess (CORS: der Renderer darf
  * Flowbase nicht direkt rufen). Abhängigkeiten sind über
@@ -41,6 +43,8 @@ const MESSAGES = {
   modelsFailed: "Model-Liste konnte nicht geladen werden.",
   sessionSaveFailed: "Anmeldung konnte nicht gespeichert werden.",
   logoutFailed: "Abmelden fehlgeschlagen. Bitte App neu starten und erneut versuchen.",
+  emptyRecording: "Keine Aufnahme vorhanden.",
+  emptyTranscript: "Flowbase hat keinen Text erkannt.",
 };
 
 function defaultTempDir() {
@@ -139,13 +143,15 @@ function createFlowbaseClient(overrides = {}) {
   // ── HTTP ────────────────────────────────────────────────────
   async function request(method, route, { body, token } = {}) {
     const headers = {};
-    if (body !== undefined) headers["Content-Type"] = "application/json";
+    // FormData (Aufnahme-Upload) setzt Content-Type samt boundary selbst.
+    const isForm = body instanceof FormData;
+    if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
     if (token) headers.Authorization = `Bearer ${token}`;
     try {
       return await deps.fetch(`${baseUrl}${route}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: body === undefined || isForm ? body : JSON.stringify(body),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (err) {
@@ -363,7 +369,58 @@ function createFlowbaseClient(overrides = {}) {
     const modelId = getActiveModel();
     if (!modelId) return { ok: false, message: MESSAGES.noModel };
 
-    const result = await authed("POST", "/api/voice-message", { text: clean, modelId });
+    return saveMp3(await authed("POST", "/api/voice-message", { text: clean, modelId }));
+  }
+
+  // Aufnahme → multipart { audio, modelId } wie von Flowbase erwartet.
+  function audioForm(audio, mimeType, modelId) {
+    const type =
+      typeof mimeType === "string" && mimeType.startsWith("audio/")
+        ? mimeType.split(";")[0].trim()
+        : "audio/webm";
+    const form = new FormData();
+    form.append("audio", new Blob([audio], { type }), `aufnahme.${type.slice(6) || "webm"}`);
+    form.append("modelId", modelId);
+    return form;
+  }
+
+  // Gemeinsame Vorprüfung der Aufnahme-Wege: Aufnahme da, angemeldet, Model aktiv.
+  function recordingPrecheck(audio) {
+    if (!audio || !audio.length) return { ok: false, message: MESSAGES.emptyRecording };
+    if (!readSession()?.accessToken) return { ok: false, message: MESSAGES.notLoggedIn };
+    const modelId = getActiveModel();
+    if (!modelId) return { ok: false, message: MESSAGES.noModel };
+    return { ok: true, modelId };
+  }
+
+  // Kürzel C: Aufnahme → MP3 in der Stimme des aktiven Models.
+  async function makeVoiceMessageFromAudio(audio, mimeType) {
+    const check = recordingPrecheck(audio);
+    if (!check.ok) return check;
+    return saveMp3(
+      await authed("POST", "/api/voice-message", audioForm(audio, mimeType, check.modelId))
+    );
+  }
+
+  // Kürzel A: Aufnahme → Text (Flowbase-Tür „mach Text“).
+  async function transcribeAudio(audio, mimeType) {
+    const check = recordingPrecheck(audio);
+    if (!check.ok) return check;
+    const result = await authed(
+      "POST",
+      "/api/voice-text",
+      audioForm(audio, mimeType, check.modelId)
+    );
+    if (result.message) return { ok: false, message: result.message };
+    if (!result.res.ok) return { ok: false, message: await errorMessage(result.res) };
+    const data = await readJson(result.res);
+    const text = typeof data.text === "string" ? data.text.trim() : "";
+    if (!text) return { ok: false, message: MESSAGES.emptyTranscript };
+    return { ok: true, text };
+  }
+
+  // Antwort von /api/voice-message → MP3 im Temp-Ordner.
+  async function saveMp3(result) {
     if (result.message) return { ok: false, message: result.message };
     if (!result.res.ok) return { ok: false, message: await errorMessage(result.res) };
 
@@ -399,6 +456,8 @@ function createFlowbaseClient(overrides = {}) {
     setActiveModel,
     getActiveModel,
     makeVoiceMessage,
+    makeVoiceMessageFromAudio,
+    transcribeAudio,
   };
 }
 
@@ -430,4 +489,7 @@ module.exports = {
   setActiveModel: (modelId) => client().setActiveModel(modelId),
   getActiveModel: () => client().getActiveModel(),
   makeVoiceMessage: (text) => client().makeVoiceMessage(text),
+  makeVoiceMessageFromAudio: (audio, mimeType) =>
+    client().makeVoiceMessageFromAudio(audio, mimeType),
+  transcribeAudio: (audio, mimeType) => client().transcribeAudio(audio, mimeType),
 };

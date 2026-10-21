@@ -146,3 +146,41 @@ test("device cleanup clears persisted settings and encrypted secret files", asyn
   assert.equal(fs.existsSync(path.join(userDataDirectory, ".env")), false);
   assert.equal(fs.existsSync(secureKeysDirectory), false);
 });
+
+test("geleertes Kürzel A/B/C bleibt nach Neustart leer, nie gesetztes nutzt den Standard", async (t) => {
+  const keys = ["FLOWBASE_TEXT_KEY", "VOICE_MESSAGE_KEY", "FLOWBASE_VOICE_KEY"];
+  const realDotenvParse = require("dotenv").parse;
+  const userDataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "openwhispr-flowbase-hotkey-"));
+  const snapshot = new Map(
+    keys.map((name) => [
+      name,
+      { present: Object.hasOwn(process.env, name), value: process.env[name] },
+    ])
+  );
+  const originalResourcesPath = process.resourcesPath;
+  process.resourcesPath = userDataDirectory;
+  for (const name of keys) delete process.env[name];
+  t.after(() => {
+    restoreEnvironment(snapshot);
+    process.resourcesPath = originalResourcesPath;
+    fs.rmSync(userDataDirectory, { recursive: true, force: true });
+  });
+
+  installDotenvStub(t);
+  const EnvironmentManager = loadEnvironmentManager(t, userDataDirectory);
+  const environmentManager = new EnvironmentManager();
+  assert.equal(environmentManager.getFlowbaseTextKey(), "Control+Alt+A");
+
+  environmentManager.saveFlowbaseTextKey("");
+  environmentManager.saveVoiceMessageKey("Control+Alt+M");
+  await environmentManager.saveAllKeysToEnvFile();
+  const persisted = fs.readFileSync(path.join(userDataDirectory, ".env"), "utf8");
+  assert.match(persisted, /^FLOWBASE_TEXT_KEY=$/m);
+
+  // Neustart: Prozess-Umgebung leer, Werte nur aus der gespeicherten .env.
+  for (const name of keys) delete process.env[name];
+  Object.assign(process.env, realDotenvParse(persisted));
+  assert.equal(environmentManager.getFlowbaseTextKey(), "");
+  assert.equal(environmentManager.getVoiceMessageKey(), "Control+Alt+M");
+  assert.equal(environmentManager.getFlowbaseVoiceKey(), "Control+Alt+C");
+});

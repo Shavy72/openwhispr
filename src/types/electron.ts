@@ -1443,6 +1443,8 @@ declare global {
       onToggleDictation: (callback: () => void) => () => void;
       onToggleVoiceAgent?: (callback: () => void) => () => void;
       onToggleTranslation?: (callback: () => void) => () => void;
+      onToggleFlowbaseText?: (callback: () => void) => () => void;
+      onToggleFlowbaseVoice?: (callback: () => void) => () => void;
       onOpenAssistantPanel?: (callback: () => void) => () => void;
       onStartDictation?: (callback: () => void) => () => void;
       onStopDictation?: (callback: () => void) => () => void;
@@ -2914,6 +2916,12 @@ declare global {
       updateVoiceMessageHotkey?: (
         hotkey: string
       ) => Promise<{ success: boolean; message?: string }>;
+      updateFlowbaseTextHotkey?: (
+        hotkey: string
+      ) => Promise<{ success: boolean; message?: string }>;
+      updateFlowbaseVoiceHotkey?: (
+        hotkey: string
+      ) => Promise<{ success: boolean; message?: string }>;
 
       // Flowbase-Konto + Sprachnachricht (Kürzel B)
       flowbaseLogin?: (
@@ -2938,8 +2946,17 @@ declare global {
       flowbaseSetActiveModel?: (
         modelId: string | null
       ) => Promise<{ ok: boolean; message?: string }>;
+      flowbaseProcessRecording?: (
+        kind: "text" | "voice",
+        audio: ArrayBuffer,
+        mimeType: string
+      ) => Promise<{ ok: boolean; text?: string; message?: string }>;
       onFlowbaseVoiceMessageStatus?: (
-        callback: (status: { state: "working" | "done" | "error"; message: string }) => void
+        callback: (status: {
+          state: "working" | "done" | "idle" | "error";
+          message: string;
+          title?: string;
+        }) => void
       ) => () => void;
       createAgentConversation?: (
         title: string,

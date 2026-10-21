@@ -26,6 +26,8 @@ const SLOT_LABEL_KEYS = {
   translation: "settingsPage.general.translationHotkey.title",
   meeting: "settingsPage.general.meetingHotkey.title",
   voiceMessage: "settingsPage.general.voiceMessageHotkey.title",
+  flowbaseText: "settingsPage.general.flowbaseTextHotkey.title",
+  flowbaseVoice: "settingsPage.general.flowbaseVoiceHotkey.title",
 };
 
 // KDE registration failure reasons — reuse existing i18n keys
