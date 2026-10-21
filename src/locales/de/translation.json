@@ -2477,6 +2477,14 @@
       "voiceMessageHotkey": {
         "title": "Kürzel B – Text → Sprachnachricht",
         "description": "Text ins Chat-Feld tippen, Kürzel drücken – die Sprachnachricht in der Stimme deines Models ersetzt den Text."
+      },
+      "flowbaseTextHotkey": {
+        "title": "Kürzel A – Diktat über Flowbase",
+        "description": "Kürzel drücken, sprechen, nochmal drücken – Flowbase macht Text daraus und fügt ihn ins Feld ein. Danach Kürzel B für die Sprachnachricht."
+      },
+      "flowbaseVoiceHotkey": {
+        "title": "Kürzel C – Sprechen → Sprachnachricht",
+        "description": "Kürzel drücken, sprechen, nochmal drücken – Flowbase vertont die Aufnahme in der Stimme deines Models und fügt die Sprachnachricht ein."
       }
     },
     "permissions": {

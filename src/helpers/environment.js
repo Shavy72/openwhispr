@@ -21,6 +21,8 @@ const SECRET_KEYS = [
 ];
 
 const DEFAULT_VOICE_MESSAGE_KEY = "Control+Alt+B";
+const DEFAULT_FLOWBASE_TEXT_KEY = "Control+Alt+A";
+const DEFAULT_FLOWBASE_VOICE_KEY = "Control+Alt+C";
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
 
@@ -40,6 +42,8 @@ const PERSISTED_KEYS = [
   "VOICE_AGENT_KEY",
   "TRANSLATION_KEY",
   "VOICE_MESSAGE_KEY",
+  "FLOWBASE_TEXT_KEY",
+  "FLOWBASE_VOICE_KEY",
   "MEETING_KEY",
   "ACTIVATION_MODE",
   "FLOATING_ICON_AUTO_HIDE",
@@ -426,6 +430,27 @@ class EnvironmentManager {
 
   saveVoiceMessageKey(key) {
     const result = this._saveKey("VOICE_MESSAGE_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  // Kürzel A (Diktat über Flowbase) und C (Sprechen → Sprachnachricht), wie B.
+  getFlowbaseTextKey() {
+    return this._getKey("FLOWBASE_TEXT_KEY") || DEFAULT_FLOWBASE_TEXT_KEY;
+  }
+
+  saveFlowbaseTextKey(key) {
+    const result = this._saveKey("FLOWBASE_TEXT_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  getFlowbaseVoiceKey() {
+    return this._getKey("FLOWBASE_VOICE_KEY") || DEFAULT_FLOWBASE_VOICE_KEY;
+  }
+
+  saveFlowbaseVoiceKey(key) {
+    const result = this._saveKey("FLOWBASE_VOICE_KEY", key);
     this.saveAllKeysToEnvFile().catch(() => {});
     return result;
   }

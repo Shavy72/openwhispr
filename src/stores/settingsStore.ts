@@ -1197,6 +1197,10 @@ export interface SettingsState
   setTranslationKey: (key: string) => Promise<HotkeyRegistrationResult>;
   voiceMessageKey: string;
   setVoiceMessageKey: (key: string) => Promise<HotkeyRegistrationResult>;
+  flowbaseTextKey: string;
+  setFlowbaseTextKey: (key: string) => Promise<HotkeyRegistrationResult>;
+  flowbaseVoiceKey: string;
+  setFlowbaseVoiceKey: (key: string) => Promise<HotkeyRegistrationResult>;
   setMeetingHotkeyLayoutMode: (mode: "side-panel" | "full-width") => void;
   setOnboardingUseCases: (useCases: string[]) => void;
   setOnboardingUseCaseNote: (note: string) => void;
@@ -1318,7 +1322,8 @@ function createNumberSetter(key: string) {
 // being persisted. Rolls back to the previous key if registration fails.
 // Resolves to false on failure so optimistic UIs (HotkeyListInput) can revert.
 function createRegisteredHotkeySetter(
-  key: "voiceAgentKey" | "translationKey" | "voiceMessageKey",
+  key:
+    "voiceAgentKey" | "translationKey" | "voiceMessageKey" | "flowbaseTextKey" | "flowbaseVoiceKey",
   label: string,
   getRegisterFn: () => ((hotkey: string) => Promise<HotkeyRegistrationResult>) | undefined,
   fallbackSave?: (hotkey: string) => void
@@ -1604,6 +1609,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   voiceAgentKey: readString("voiceAgentKey", ""),
   translationKey: readString("translationKey", ""),
   voiceMessageKey: readString("voiceMessageKey", "Control+Alt+B"),
+  flowbaseTextKey: readString("flowbaseTextKey", "Control+Alt+A"),
+  flowbaseVoiceKey: readString("flowbaseVoiceKey", "Control+Alt+C"),
   onboardingUseCases: readStringArray("onboardingUseCases", []),
   onboardingUseCaseNote: readString("onboardingUseCaseNote", ""),
   spokenLanguages: readStringArray("spokenLanguages", []),
@@ -2339,6 +2346,16 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     "voiceMessageKey",
     "voice message hotkey",
     () => window.electronAPI?.updateVoiceMessageHotkey
+  ),
+  setFlowbaseTextKey: createRegisteredHotkeySetter(
+    "flowbaseTextKey",
+    "flowbase text hotkey",
+    () => window.electronAPI?.updateFlowbaseTextHotkey
+  ),
+  setFlowbaseVoiceKey: createRegisteredHotkeySetter(
+    "flowbaseVoiceKey",
+    "flowbase voice hotkey",
+    () => window.electronAPI?.updateFlowbaseVoiceHotkey
   ),
 
   setMeetingHotkeyLayoutMode: (mode: "side-panel" | "full-width") => {

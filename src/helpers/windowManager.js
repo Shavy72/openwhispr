@@ -1211,6 +1211,11 @@ class WindowManager {
     this._sendDictationToggle("toggle-translation", "translation");
   }
 
+  // Kürzel A ("text") / C ("voice"): Upstream-Diktat-Aufnahme, Ergebnis geht an Flowbase.
+  sendToggleFlowbaseRecording(kind) {
+    this._sendDictationToggle(`toggle-flowbase-${kind}`, "dictation");
+  }
+
   // The tray's Ask assistant. Only the renderer can open the panel, and only it
   // knows the policy and recording state the pill menu gates the item on, so it
   // decides: nothing is shown or created here, and an accepted command surfaces

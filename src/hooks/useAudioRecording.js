@@ -78,6 +78,7 @@ export const useAudioRecording = (toast, options = {}) => {
   const lastStartOptionsRef = useRef({
     voiceAgentRequested: false,
     translationRequested: false,
+    flowbaseKind: null,
   });
   const {
     onToggle,
@@ -139,9 +140,13 @@ export const useAudioRecording = (toast, options = {}) => {
   }, []);
 
   const performStartRecording = useCallback(
-    async ({ voiceAgentRequested = false, translationRequested = false } = {}) => {
+    async ({
+      voiceAgentRequested = false,
+      translationRequested = false,
+      flowbaseKind = null,
+    } = {}) => {
       if (startLockRef.current) return false;
-      lastStartOptionsRef.current = { voiceAgentRequested, translationRequested };
+      lastStartOptionsRef.current = { voiceAgentRequested, translationRequested, flowbaseKind };
       startLockRef.current = true;
       stopRequestedDuringStartRef.current = false;
       pushForceStoppedRef.current = false;
@@ -193,6 +198,7 @@ export const useAudioRecording = (toast, options = {}) => {
         audioManagerRef.current.setVoiceAgentRequested(voiceAgentRequested);
         audioManagerRef.current.setAssistantSelectionContext(assistantSelectionContext);
         audioManagerRef.current.setTranslationRequested(translationRequested);
+        audioManagerRef.current.setFlowbaseKind?.(flowbaseKind);
         // Covers the toggle path with freshly-set flags; the signature dedup
         // makes this a no-op when the prepare handler already reported the
         // same kind ahead of the flags being set.
@@ -1014,6 +1020,7 @@ export const useAudioRecording = (toast, options = {}) => {
     const handleToggle = async ({
       voiceAgentRequested = false,
       translationRequested = false,
+      flowbaseKind = null,
     } = {}) => {
       if (!audioManagerRef.current) return;
       const currentState = audioManagerRef.current.getState();
@@ -1023,7 +1030,7 @@ export const useAudioRecording = (toast, options = {}) => {
       if (startLockRef.current || currentState.isRecording) {
         await performStopRecording();
       } else if (canStartDictation(currentState)) {
-        await performStartRecording({ voiceAgentRequested, translationRequested });
+        await performStartRecording({ voiceAgentRequested, translationRequested, flowbaseKind });
       }
     };
 
@@ -1047,6 +1054,17 @@ export const useAudioRecording = (toast, options = {}) => {
 
     const disposeTranslationToggle = window.electronAPI.onToggleTranslation?.(() => {
       handleToggle({ translationRequested: true });
+      onToggle?.();
+    });
+
+    // Kürzel A (Diktat über Flowbase) / C (Sprechen → Sprachnachricht).
+    const disposeFlowbaseTextToggle = window.electronAPI.onToggleFlowbaseText?.(() => {
+      handleToggle({ flowbaseKind: "text" });
+      onToggle?.();
+    });
+
+    const disposeFlowbaseVoiceToggle = window.electronAPI.onToggleFlowbaseVoice?.(() => {
+      handleToggle({ flowbaseKind: "voice" });
       onToggle?.();
     });
 
@@ -1097,6 +1115,8 @@ export const useAudioRecording = (toast, options = {}) => {
       disposeToggle?.();
       disposeVoiceAgentToggle?.();
       disposeTranslationToggle?.();
+      disposeFlowbaseTextToggle?.();
+      disposeFlowbaseVoiceToggle?.();
       disposeStart?.();
       disposePrepare?.();
       disposeCancelPreparation?.();

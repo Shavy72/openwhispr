@@ -302,6 +302,7 @@ const {
   VOICE_MESSAGE_STATUS_EVENT,
 } = require("./src/helpers/voiceMessageShortcut");
 const flowbaseClient = require("./src/helpers/flowbaseClient");
+const { createFlowbaseRecordingShortcut } = require("./src/helpers/flowbaseRecordingShortcut");
 const CliBridge = require("./src/helpers/cliBridge");
 const UpdateManager = require("./src/updater");
 const GlobeKeyManager = require("./src/helpers/globeKeyManager");
@@ -1387,6 +1388,52 @@ async function startApp() {
       );
     }
     hotkeyManager.notifyRestoreFailures(savedVoiceMessageKey, result);
+  }
+
+  // Kürzel A (Diktat über Flowbase) und C (Sprechen → Sprachnachricht): Kürzel
+  // startet/stoppt die Upstream-Diktat-Aufnahme, der Renderer schickt die fertige
+  // Aufnahme per "flowbase-process-recording" hierher zurück.
+  windowManager._flowbaseRecordingShortcut = createFlowbaseRecordingShortcut({
+    transcribeAudio: (audio, mimeType) => flowbaseClient.transcribeAudio(audio, mimeType),
+    makeVoiceMessageFromAudio: (audio, mimeType) =>
+      flowbaseClient.makeVoiceMessageFromAudio(audio, mimeType),
+    pasteFile: (filePath) => clipboardManager.pasteFile(filePath),
+    notify: (status) => {
+      for (const browserWindow of BrowserWindow.getAllWindows()) {
+        if (!browserWindow.isDestroyed()) {
+          browserWindow.webContents.send(VOICE_MESSAGE_STATUS_EVENT, status);
+        }
+      }
+    },
+  });
+  for (const { slot, kind, callbackKey, savedKey } of [
+    {
+      slot: "flowbaseText",
+      kind: "text",
+      callbackKey: "_flowbaseTextHotkeyCallback",
+      savedKey: environmentManager.getFlowbaseTextKey?.() || "",
+    },
+    {
+      slot: "flowbaseVoice",
+      kind: "voice",
+      callbackKey: "_flowbaseVoiceHotkeyCallback",
+      savedKey: environmentManager.getFlowbaseVoiceKey?.() || "",
+    },
+  ]) {
+    const isPress = createHotkeyRepeatGate();
+    const callback = () => {
+      if (!isPress()) return;
+      debugLogger.info("Flowbase recording hotkey", { kind }, "hotkey");
+      windowManager.sendToggleFlowbaseRecording(kind);
+    };
+    windowManager[callbackKey] = callback;
+    if (savedKey) {
+      const result = await hotkeyManager.registerSlot(slot, savedKey, callback);
+      if (!result.success) {
+        debugLogger.warn(`Failed to restore ${slot} hotkey`, { hotkey: savedKey }, "hotkey");
+      }
+      hotkeyManager.notifyRestoreFailures(savedKey, result);
+    }
   }
 
   // Set up meeting mode hotkey

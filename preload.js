@@ -104,6 +104,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onToggleDictation: registerListener("toggle-dictation", (callback) => () => callback()),
   onToggleVoiceAgent: registerListener("toggle-voice-agent", (callback) => () => callback()),
   onToggleTranslation: registerListener("toggle-translation", (callback) => () => callback()),
+  onToggleFlowbaseText: registerListener("toggle-flowbase-text", (callback) => () => callback()),
+  onToggleFlowbaseVoice: registerListener("toggle-flowbase-voice", (callback) => () => callback()),
   onOpenAssistantPanel: registerListener("open-assistant-panel", (callback) => () => callback()),
   onStartDictation: registerListener("start-dictation", (callback) => () => callback()),
   onStopDictation: registerListener("stop-dictation", (callback) => () => callback()),
@@ -1099,6 +1101,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   updateTranslationHotkey: (hotkey) => ipcRenderer.invoke("update-translation-hotkey", hotkey),
   getTranslationKey: () => ipcRenderer.invoke("get-translation-key"),
   updateVoiceMessageHotkey: (hotkey) => ipcRenderer.invoke("update-voice-message-hotkey", hotkey),
+  updateFlowbaseTextHotkey: (hotkey) => ipcRenderer.invoke("update-flowbase-text-hotkey", hotkey),
+  updateFlowbaseVoiceHotkey: (hotkey) => ipcRenderer.invoke("update-flowbase-voice-hotkey", hotkey),
 
   // Flowbase-Konto + Sprachnachricht (Kürzel B)
   flowbaseLogin: (email, password) => ipcRenderer.invoke("flowbase-login", email, password),
@@ -1106,6 +1110,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   flowbaseGetSession: () => ipcRenderer.invoke("flowbase-get-session"),
   flowbaseListModels: () => ipcRenderer.invoke("flowbase-list-models"),
   flowbaseSetActiveModel: (modelId) => ipcRenderer.invoke("flowbase-set-active-model", modelId),
+  // Kürzel A/C: fertige Aufnahme an Flowbase (kind: "text" | "voice").
+  flowbaseProcessRecording: (kind, audio, mimeType) =>
+    ipcRenderer.invoke("flowbase-process-recording", kind, audio, mimeType),
   onFlowbaseVoiceMessageStatus: registerListener(
     "flowbase-voice-message-status",
     (callback) => (_event, status) => callback(status)

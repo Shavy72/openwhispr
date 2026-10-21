@@ -12097,6 +12097,54 @@ class IPCHandlers {
       return { success: false, message: result.error };
     });
 
+    // Kürzel A (flowbaseText) und C (flowbaseVoice): gleiche Registrierung wie Kürzel B.
+    for (const { channel, slot, callbackKey, save } of [
+      {
+        channel: "update-flowbase-text-hotkey",
+        slot: "flowbaseText",
+        callbackKey: "_flowbaseTextHotkeyCallback",
+        save: (key) => this.environmentManager.saveFlowbaseTextKey?.(key),
+      },
+      {
+        channel: "update-flowbase-voice-hotkey",
+        slot: "flowbaseVoice",
+        callbackKey: "_flowbaseVoiceHotkeyCallback",
+        save: (key) => this.environmentManager.saveFlowbaseVoiceKey?.(key),
+      },
+    ]) {
+      ipcMain.handle(channel, async (_event, hotkey) => {
+        const hotkeyManager = this.windowManager.hotkeyManager;
+        const callback = this.windowManager[callbackKey];
+        if (!callback) return { success: false };
+
+        if (!hotkey) {
+          const removed = await hotkeyManager.unregisterSlot(slot);
+          if (removed === false) return { success: false };
+          save("");
+          this.windowManager.reconcileNativeKeyListeners();
+          this._notifyHotkeyChanged("");
+          return { success: true, message: `${slot} hotkey cleared` };
+        }
+
+        const result = await hotkeyManager.registerSlot(slot, hotkey, callback, { atomic: true });
+        this.windowManager.reconcileNativeKeyListeners();
+        if (result.success) {
+          save(hotkey);
+          this._notifyHotkeyChanged(hotkey);
+          return { success: true, message: `${slot} hotkey updated to: ${hotkey}` };
+        }
+        return { success: false, message: result.error };
+      });
+    }
+
+    // Fertige Aufnahme von Kürzel A/C → Flowbase (flowbaseRecordingShortcut in main.js).
+    ipcMain.handle("flowbase-process-recording", async (_event, kind, audio, mimeType) => {
+      const shortcut = this.windowManager._flowbaseRecordingShortcut;
+      if (!shortcut) return { ok: false, message: "Flowbase-Kürzel nicht bereit." };
+      const buffer = audio ? Buffer.from(audio) : Buffer.alloc(0);
+      return shortcut.handleRecording(kind, buffer, typeof mimeType === "string" ? mimeType : "");
+    });
+
     ipcMain.handle("acquire-recording-lock", async (_event, pipeline) => {
       if (this._activeRecordingPipeline && this._activeRecordingPipeline !== pipeline) {
         return { success: false, holder: this._activeRecordingPipeline };
