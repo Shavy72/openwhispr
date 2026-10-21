@@ -18,6 +18,7 @@ export type OnboardingStepId =
   | "auth"
   | "required-models"
   | "permissions"
+  | "flowbase-shortcuts"
   | "languages"
   | "use-cases"
   | "dictation-hotkey"
@@ -107,6 +108,11 @@ export interface OnboardingRouteContext {
   requiredModelsPending?: boolean;
   /** A confirmed Enterprise workspace is already provisioned outside onboarding. */
   skipSetupChoice?: boolean;
+  /**
+   * Flowbase-Fork: Login → Erlaubnisse (nur macOS) → Kürzel A/B/C. Ersetzt die
+   * Upstream-Schritte (Sprache, Diktat-Kürzel, Demos, Anbieter).
+   */
+  flowbasePlatform?: string;
 }
 
 // Dictation first, then Notes (the meeting recorder and its calendar
@@ -133,6 +139,7 @@ const STEP_ORDER: OnboardingStepId[] = [
   "auth",
   "required-models",
   "permissions",
+  "flowbase-shortcuts",
   "languages",
   "use-cases",
   "dictation-hotkey",
@@ -228,6 +235,11 @@ export function resetOnboardingProgress(storage: OnboardingStorage): void {
 
 export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingStepId[] {
   if (context.authPath === null) return ["auth"];
+  if (context.flowbasePlatform) {
+    return context.flowbasePlatform === "darwin"
+      ? ["auth", "permissions", "flowbase-shortcuts"]
+      : ["auth", "flowbase-shortcuts"];
+  }
 
   const setupChoice = context.skipSetupChoice ? [] : (["setup-choice"] as OnboardingStepId[]);
 

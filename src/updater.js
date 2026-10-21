@@ -33,7 +33,7 @@ class UpdateManager {
 
     autoUpdater.setFeedURL({
       provider: "github",
-      owner: "OpenWhispr",
+      owner: "Shavy72",
       repo: "openwhispr",
       private: false,
     });
@@ -81,6 +81,9 @@ class UpdateManager {
         this.notifyRenderers("checking-for-update");
       },
       "update-available": (info) => {
+        console.log(
+          `🔄 Update verfügbar: ${autoUpdater.currentVersion?.version ?? "?"} → ${info?.version ?? "?"}`
+        );
         this.updateAvailable = true;
         if (info) {
           this.lastUpdateInfo = {
@@ -113,7 +116,9 @@ class UpdateManager {
         this.notifyRenderers("update-download-progress", progressObj);
       },
       "update-downloaded": (info) => {
-        console.log("✅ Update downloaded successfully:", info?.version);
+        console.log(
+          `✅ Update geladen: ${autoUpdater.currentVersion?.version ?? "?"} → ${info?.version ?? "?"} (Installation beim Beenden)`
+        );
         this.updateDownloaded = true;
         this.isDownloading = false;
         if (info) {

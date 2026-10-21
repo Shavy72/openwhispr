@@ -39,6 +39,8 @@ interface CompactPermissionsStepProps {
   /** Omitted when there is no step to return to. */
   onBack?: () => void;
   onContinue: () => void;
+  /** Flowbase-Fork: nur Mikrofon und Bedienungshilfen, keine optionalen Zeilen. */
+  requiredOnly?: boolean;
 }
 
 interface PermissionRowProps {
@@ -128,6 +130,7 @@ export default function CompactPermissionsStep({
   screenContext,
   onBack,
   onContinue,
+  requiredOnly = false,
 }: CompactPermissionsStepProps) {
   const { t } = useTranslation();
   const [busyPermission, setBusyPermission] = useState<PermissionGuideId | null>(null);
@@ -139,10 +142,10 @@ export default function CompactPermissionsStep({
   // loopback is permissionless) and Linux has no in-app grant for either, so
   // showing those rows there is either a no-op button or a dead disabled one.
   const showAccessibility = platform === "darwin";
-  const showSystemAudio = platform === "darwin";
+  const showSystemAudio = platform === "darwin" && !requiredOnly;
   // Screen Context: macOS grants via TCC, Windows is a permissionless opt-in;
   // Linux is hidden because Wayland capture is unsupported.
-  const showScreenContext = platform === "darwin" || platform === "win32";
+  const showScreenContext = (platform === "darwin" || platform === "win32") && !requiredOnly;
   const showLinuxPasteGuidance =
     platform === "linux" &&
     permissions.pasteToolsInfo !== null &&
