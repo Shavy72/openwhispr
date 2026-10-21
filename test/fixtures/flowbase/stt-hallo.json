@@ -1,0 +1,64 @@
+{
+  "aufgenommen": "2026-10-20T08:59:39.188Z",
+  "eingabe": "tts-hallo.mp3",
+  "modelId": "scribe_v2",
+  "status": 200,
+  "body": {
+    "language_code": "deu",
+    "language_probability": 0.6780520081520081,
+    "text": "Hallo, wie geht's dir?",
+    "words": [
+      {
+        "text": "Hallo,",
+        "start": 0.06,
+        "end": 0.42,
+        "type": "word",
+        "logprob": -0.00007567171269329265
+      },
+      {
+        "text": " ",
+        "start": 0.42,
+        "end": 0.56,
+        "type": "spacing",
+        "logprob": -1.1920928244535389e-7
+      },
+      {
+        "text": "wie",
+        "start": 0.56,
+        "end": 0.64,
+        "type": "word",
+        "logprob": -1.1920928244535389e-7
+      },
+      {
+        "text": " ",
+        "start": 0.64,
+        "end": 0.72,
+        "type": "spacing",
+        "logprob": -0.0000014305104514278355
+      },
+      {
+        "text": "geht's",
+        "start": 0.72,
+        "end": 0.98,
+        "type": "word",
+        "logprob": -0.000004112689794055768
+      },
+      {
+        "text": " ",
+        "start": 0.98,
+        "end": 1,
+        "type": "spacing",
+        "logprob": -0.0000020265558760002023
+      },
+      {
+        "text": "dir?",
+        "start": 1,
+        "end": 1.32,
+        "type": "word",
+        "logprob": -0.00007580606899182385
+      }
+    ],
+    "transcription_id": "zdM5rpb2CUjy4NPWLcFG",
+    "audio_duration_secs": 1.68
+  }
+}
