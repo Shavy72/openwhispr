@@ -246,3 +246,31 @@ test("Fehler werden als deutscher Toast mit passendem Titel gemeldet", async () 
   assert.equal((await s.shortcut.handleRecording("x", Buffer.from("a"), "")).ok, false);
   assert.equal(s.statuses.at(-1).message, "Unbekanntes Kürzel.");
 });
+
+test("Ausnahmen bei Kürzel A/C landen mit kind + message im Log, Toast bleibt gleich", async () => {
+  const logs = [];
+  const logger = { warn: (message, meta, scope) => logs.push({ message, meta, scope }) };
+  const statuses = [];
+  const shortcut = createFlowbaseRecordingShortcut({
+    transcribeAudio: async () => {
+      throw new Error("Netz weg");
+    },
+    makeVoiceMessageFromAudio: async () => ({ ok: true, filePath: "/tmp/a.mp3" }),
+    pasteFile: async () => {
+      throw new Error("xdotool fehlt");
+    },
+    notify: (s) => statuses.push(s),
+    logger,
+  });
+  await shortcut.handleRecording("text", Buffer.from("a"), "");
+  assert.equal(statuses.at(-1).message, MESSAGES.textUnexpected);
+  await shortcut.handleRecording("voice", Buffer.from("a"), "");
+  assert.equal(statuses.at(-1).message, MESSAGES.pasteFailed);
+  assert.deepEqual(
+    logs.map((l) => [l.meta.kind, l.meta.message, l.scope]),
+    [
+      ["text", "Netz weg", "audio"],
+      ["voice", "xdotool fehlt", "audio"],
+    ]
+  );
+});

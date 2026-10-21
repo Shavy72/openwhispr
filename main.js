@@ -1405,6 +1405,7 @@ async function startApp() {
         }
       }
     },
+    logger: debugLogger,
   });
   for (const { slot, kind, callbackKey, savedKey } of [
     {
