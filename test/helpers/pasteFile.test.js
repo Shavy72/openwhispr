@@ -79,6 +79,15 @@ test("pasteFile on Linux without X11 rejects with a clear message", async (t) =>
   await assert.rejects(new ClipboardManager().pasteFile("/tmp/x.mp3"), /X11-Sitzung/);
 });
 
+test("pasteFile auf nicht unterstützter Plattform (freebsd) wirft", async (t) => {
+  asPlatform(t, "freebsd");
+  const ClipboardManager = loadWithMocks({ accessibility: true, written: [] });
+  await assert.rejects(
+    new ClipboardManager().pasteFile("/tmp/x.mp3"),
+    /pasteFile is only supported on Windows, macOS and Linux/
+  );
+});
+
 // --- Kürzel B unter Linux (X11 + xdotool) ---
 
 function loadLinux({ events }) {
