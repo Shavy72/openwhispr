@@ -532,3 +532,29 @@ test("a session written before the resume flags infers its hotkey confirmations"
   assert.equal(past.resume.dictationDemoCompleted, false);
   assert.equal(past.resume.assistantDemoCompleted, false);
 });
+
+test("Flowbase-Fork: Windows/Linux Login → Kürzel → Fertig, macOS mit Erlaubnissen", async () => {
+  const { getOnboardingRoute, getNextOnboardingStep } = await load();
+  const route = (flowbasePlatform) =>
+    getOnboardingRoute({
+      authPath: "guest",
+      setupMode: null,
+      agentAllowed: true,
+      skipSetupChoice: true,
+      flowbasePlatform,
+    });
+
+  assert.deepEqual(route("win32"), ["auth", "flowbase-shortcuts"]);
+  assert.deepEqual(route("linux"), ["auth", "flowbase-shortcuts"]);
+  assert.deepEqual(route("darwin"), ["auth", "permissions", "flowbase-shortcuts"]);
+  // Nach dem Kürzel-Schritt kommt kein weiterer: Übernehmen schließt das Onboarding ab.
+  assert.equal(getNextOnboardingStep("flowbase-shortcuts", route("win32")), null);
+});
+
+test("Flowbase-Fork: Onboarding-Abschluss schaltet Autostart an", () => {
+  const source = readFileSync("src/components/OnboardingFlow.tsx", "utf8");
+  const completed = source.indexOf('localStorage.setItem("onboardingCompleted", "true")');
+  const autoStart = source.indexOf("window.electronAPI?.setAutoStartEnabled?.(true)");
+  assert.ok(completed > 0 && autoStart > completed);
+  assert.ok(autoStart < source.indexOf("onComplete();", completed));
+});

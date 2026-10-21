@@ -237,3 +237,35 @@ test("a Linux AppImage is supported, but deb/rpm/tar.gz installs never touch the
 
   packaged.cleanup();
 });
+
+test("Flowbase-Fork: Update-Feed und Veröffentlichung zeigen auf Shavy72/openwhispr", () => {
+  const autoUpdater = makeAutoUpdater();
+  let feed = null;
+  autoUpdater.setFeedURL = (options) => {
+    feed = options;
+  };
+  createUpdateManager(autoUpdater).cleanup();
+  assert.deepEqual(
+    { provider: feed.provider, owner: feed.owner, repo: feed.repo },
+    { provider: "github", owner: "Shavy72", repo: "openwhispr" }
+  );
+  assert.equal(autoUpdater.autoInstallOnAppQuit, true, "Installation beim Beenden");
+
+  const builder = require("../../electron-builder.json");
+  assert.equal(builder.publish.owner, "Shavy72");
+  assert.equal(builder.publish.repo, "openwhispr");
+  assert.equal(builder.publish.releaseType, "release");
+});
+
+test("Flowbase-Fork: Update-Ereignisse loggen alte und neue Version", () => {
+  const autoUpdater = makeAutoUpdater();
+  autoUpdater.currentVersion = { version: "1.11.0" };
+  const manager = createUpdateManager(autoUpdater);
+  const lines = [];
+  console.log.mock.mockImplementation((...args) => lines.push(args.join(" ")));
+  autoUpdater.listeners["update-available"]({ version: "1.11.1" });
+  autoUpdater.listeners["update-downloaded"]({ version: "1.11.1" });
+  assert.ok(lines.some((l) => l.includes("Update verfügbar: 1.11.0 → 1.11.1")));
+  assert.ok(lines.some((l) => l.includes("Update geladen: 1.11.0 → 1.11.1")));
+  manager.cleanup();
+});

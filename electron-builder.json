@@ -159,6 +159,7 @@
   "mac": {
     "category": "public.app-category.productivity",
     "target": ["dmg", "zip"],
+    "artifactName": "Flowbase-Stimme-${arch}.${ext}",
     "icon": "src/assets/icon.icns",
     "gatekeeperAssess": false,
     "hardenedRuntime": true,
@@ -204,6 +205,9 @@
     "icon": "src/assets/icon.png",
     "category": "Utility",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  },
+  "appImage": {
+    "artifactName": "Flowbase-Stimme.${ext}"
   },
   "flatpak": {
     "runtime": "org.freedesktop.Platform",
@@ -266,6 +270,7 @@
     ]
   },
   "nsis": {
+    "artifactName": "Flowbase-Stimme-Setup.${ext}",
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
@@ -282,9 +287,9 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "OpenWhispr",
+    "owner": "Shavy72",
     "repo": "openwhispr",
     "private": false,
-    "releaseType": "draft"
+    "releaseType": "release"
   }
 }

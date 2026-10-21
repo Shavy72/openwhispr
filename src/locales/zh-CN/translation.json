@@ -5006,6 +5006,11 @@
       "active": "Active",
       "select": "Click to activate"
     },
-    "continue": "Continue"
+    "continue": "Continue",
+    "shortcuts": {
+      "title": "Your shortcuts",
+      "description": "These three shortcuts are active right away. You can change them later in Settings.",
+      "apply": "Use these"
+    }
   }
 }

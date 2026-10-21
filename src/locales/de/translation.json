@@ -5006,6 +5006,11 @@
       "active": "Aktiv",
       "select": "Zum Aktivieren anklicken"
     },
-    "continue": "Weiter"
+    "continue": "Weiter",
+    "shortcuts": {
+      "title": "Deine Kürzel",
+      "description": "Diese drei Kürzel sind sofort aktiv. Ändern kannst du sie später in den Einstellungen.",
+      "apply": "Übernehmen"
+    }
   }
 }

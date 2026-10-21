@@ -254,13 +254,11 @@ function migrateMicrophoneSelectionMode() {
 
 migrateMicrophoneSelectionMode();
 
-// Automatic updates default on for new installs only. An install that already
-// finished onboarding keeps the manual download-and-install flow until the
-// user opts in.
+// Flowbase-Fork: automatische Updates sind für jede Installation an (laden im
+// Hintergrund, installieren beim Beenden); abschalten bleibt in den Einstellungen.
 function initializeAutoUpdatesDefault() {
   if (!isBrowser || localStorage.getItem("autoUpdatesEnabled") !== null) return;
-  const isExistingInstall = localStorage.getItem("onboardingCompleted") === "true";
-  localStorage.setItem("autoUpdatesEnabled", String(!isExistingInstall));
+  localStorage.setItem("autoUpdatesEnabled", "true");
 }
 
 initializeAutoUpdatesDefault();

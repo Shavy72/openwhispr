@@ -30,7 +30,12 @@ import { useRequiredLocalModels } from "../hooks/useRequiredLocalModels";
 import { usePolicyStore } from "../stores/policyStore";
 import { isAgentAllowed, isScreenContextAllowed } from "../stores/policyRules";
 import { useSettingsStore } from "../stores/settingsStore";
-import { getDefaultHotkey, parseHotkeyList, serializeHotkeyList } from "../utils/hotkeys";
+import {
+  formatHotkeyLabel,
+  getDefaultHotkey,
+  parseHotkeyList,
+  serializeHotkeyList,
+} from "../utils/hotkeys";
 import {
   DEFAULT_ASSISTANT_ONBOARDING_HOTKEY,
   formatHotkeyInstruction,
@@ -301,8 +306,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         agentAllowed,
         requiredModelsPending,
         skipSetupChoice: FLOWBASE_SKIP_SETUP_CHOICE,
+        flowbasePlatform: platform,
       }),
-    [agentAllowed, requiredModelsPending, session.authPath, session.setupMode]
+    [agentAllowed, platform, requiredModelsPending, session.authPath, session.setupMode]
   );
   const currentStepId = reconcileStepWithRoute(session.currentStepId, route);
   const compact = COMPACT_STEPS.has(currentStepId);
@@ -638,6 +644,19 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         localStorage.setItem("skipAuth", String(skippedAuth));
         clearSession();
         localStorage.setItem("onboardingCompleted", "true");
+        // Flowbase-Fork: nach dem Onboarding mit dem System starten (versteckt im Tray).
+        try {
+          const autoStart = await window.electronAPI?.setAutoStartEnabled?.(true);
+          if (autoStart && !autoStart.success) {
+            logger.warn(
+              "Autostart konnte nicht aktiviert werden",
+              { error: autoStart.error },
+              "onboarding"
+            );
+          }
+        } catch (error) {
+          logger.warn("Autostart konnte nicht aktiviert werden", { error }, "onboarding");
+        }
         onComplete();
       } catch (error) {
         logger.error("Failed to finish onboarding", { error }, "onboarding");
@@ -886,9 +905,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <Button
               className="w-full"
               onClick={() => {
-                // Gast-Weg behält Mikrofon-Freigabe und Kürzel-Schritt (siehe flow.ts).
+                // Flowbase-Weg: Erlaubnisse nur unter macOS, dann Kürzel (siehe flow.ts).
                 setAuthPath("guest");
-                goTo("permissions");
+                goTo(platform === "darwin" ? "permissions" : "flowbase-shortcuts");
               }}
             >
               {t("flowbaseAccount.continue")}
@@ -935,7 +954,40 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             }
             onBack={session.history.length > 0 ? goBack : undefined}
             onContinue={() => void continueFromCurrentStep()}
+            requiredOnly
           />
+        );
+
+      case "flowbase-shortcuts":
+        return (
+          <div className="min-h-full w-full mx-auto max-w-sm space-y-4 py-6">
+            <OnboardingStepHeader
+              title={t("flowbaseAccount.shortcuts.title")}
+              description={t("flowbaseAccount.shortcuts.description")}
+            />
+            <ul className="space-y-2">
+              {(
+                [
+                  ["settingsPage.general.flowbaseTextHotkey.title", settingsStore.flowbaseTextKey],
+                  ["settingsPage.general.voiceMessageHotkey.title", settingsStore.voiceMessageKey],
+                  [
+                    "settingsPage.general.flowbaseVoiceHotkey.title",
+                    settingsStore.flowbaseVoiceKey,
+                  ],
+                ] as const
+              ).map(([labelKey, hotkey]) => (
+                <li
+                  key={labelKey}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+                >
+                  <span>{t(labelKey)}</span>
+                  <kbd className="rounded-md bg-muted px-1.5 py-0.5 font-semibold">
+                    {formatHotkeyLabel(hotkey)}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
+          </div>
         );
 
       case "languages":
@@ -1291,7 +1343,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         continueLabel={
           currentStepId === "use-cases"
             ? t("onboarding.useCase.proceedToSetup")
-            : t("common.continue")
+            : currentStepId === "flowbase-shortcuts"
+              ? t("flowbaseAccount.shortcuts.apply")
+              : t("common.continue")
         }
         skipLabel={t("common.skip")}
         continueDisabled={!canContinue}
