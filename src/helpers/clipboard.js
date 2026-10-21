@@ -4,6 +4,7 @@ const { killProcess } = require("../utils/process");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { pathToFileURL } = require("url");
 const debugLogger = require("./debugLogger");
 const { getLinuxSessionInfo } = require("./linuxSession");
 const { getCosmicActiveAppId } = require("./cosmicToplevel");
@@ -15,9 +16,16 @@ const FIELD_COPY_SETTLE_MS = 150;
 const HOTKEY_RELEASE_WAIT_MS = 300;
 // Key codes on macOS (layout-independent like the paste's key code 9 = V).
 const FIELD_KEY_COMBOS = {
-  selectAll: { nircmd: "ctrl+a", sendKeys: "^a", mac: "key code 0 using command down" },
-  copy: { nircmd: "ctrl+c", sendKeys: "^c", mac: "key code 8 using command down" },
-  delete: { nircmd: "delete", sendKeys: "{DEL}", mac: "key code 51" },
+  selectAll: {
+    nircmd: "ctrl+a",
+    sendKeys: "^a",
+    mac: "key code 0 using command down",
+    linux: "ctrl+a",
+  },
+  copy: { nircmd: "ctrl+c", sendKeys: "^c", mac: "key code 8 using command down", linux: "ctrl+c" },
+  delete: { nircmd: "delete", sendKeys: "{DEL}", mac: "key code 51", linux: "Delete" },
+  // Linux only: pasteFile() on Windows/macOS goes through pasteWindows/pasteMacOS.
+  paste: { linux: "ctrl+v" },
 };
 const CACHE_TTL_MS = 30000;
 
@@ -987,15 +995,24 @@ class ClipboardManager {
   /**
    * Pastes a file (not text) into the focused app: puts it on the clipboard as
    * a file, then fires Ctrl+V / Cmd+V through the same paste path as dictation.
-   * Windows and macOS. The file stays on the clipboard afterwards (no restore,
+   * Windows, macOS and Linux (X11 + xdotool). The file stays on the clipboard afterwards (no restore,
    * since the text-based restore cannot bring back a file list). On macOS
    * without Accessibility permission the app's permission dialog is shown and
    * the call rejects with code ACCESSIBILITY_PERMISSION_REQUIRED.
    */
   async pasteFile(absPath) {
     const platform = process.platform;
+    if (platform === "linux") {
+      this._assertKeySimulationPlatform();
+      return this._runClipboardOperation(async () => {
+        this._writeLinuxFileClipboard(absPath);
+        this.safeLog("📎 File copied to clipboard:", absPath);
+        await this._sendKeyCombo("paste");
+        await new Promise((resolve) => setTimeout(resolve, FILE_PASTE_SETTLE_MS));
+      });
+    }
     if (platform !== "win32" && platform !== "darwin") {
-      throw new Error("pasteFile is only supported on Windows and macOS");
+      throw new Error("pasteFile is only supported on Windows, macOS and Linux");
     }
     return this._runClipboardOperation(async () => {
       await writeFileToClipboard(absPath);
@@ -1021,10 +1038,25 @@ class ClipboardManager {
     });
   }
 
+  // ponytail: only text/uri-list (what Chromium/Electron and GTK read for file
+  // paste) — each Electron writeBuffer call replaces the clipboard, so
+  // x-special/gnome-copied-files cannot sit next to it; a custom X selection
+  // owner would be needed for both.
+  _writeLinuxFileClipboard(absPath) {
+    if (typeof absPath !== "string" || !path.isAbsolute(absPath)) {
+      throw new Error(`Expected an absolute file path, got: ${absPath}`);
+    }
+    if (!fs.existsSync(absPath) || !fs.statSync(absPath).isFile()) {
+      throw new Error(`File not found: ${absPath}`);
+    }
+    const uri = pathToFileURL(absPath).href;
+    clipboard.writeBuffer("text/uri-list", Buffer.from(`${uri}\r\n`, "utf8"));
+  }
+
   /**
    * Reads the whole text of the focused input field: select all + copy via the
    * same key simulation the paste path uses (nircmd/PowerShell on Windows,
-   * osascript on macOS). The clipboard is saved before and restored after, so
+   * osascript on macOS, xdotool on Linux/X11). The clipboard is saved before and restored after, so
    * the user's clipboard survives. Returns "" for an empty field. The selection
    * stays in place, so a following clearFocusedField() only removes this text.
    */
@@ -1057,6 +1089,19 @@ class ClipboardManager {
   }
 
   _assertKeySimulationPlatform() {
+    if (process.platform === "linux") {
+      if (!process.env.DISPLAY || this._isWayland()) {
+        throw new Error(
+          "Kürzel B braucht unter Linux eine X11-Sitzung (Wayland wird nicht unterstützt)."
+        );
+      }
+      if (!this.commandExists("xdotool")) {
+        throw new Error(
+          "Kürzel B braucht unter Linux xdotool. Bitte installieren: sudo apt-get install xdotool"
+        );
+      }
+      return;
+    }
     if (process.platform !== "win32" && process.platform !== "darwin") {
       throw new Error("Field key simulation is only supported on Windows and macOS");
     }
@@ -1075,6 +1120,10 @@ class ClipboardManager {
     if (process.platform === "darwin") {
       command = "osascript";
       args = ["-e", `tell application "System Events" to ${combo.mac}`];
+    } else if (process.platform === "linux") {
+      // --clearmodifiers: Ctrl+Alt from the hotkey may still be held down.
+      command = "xdotool";
+      args = ["key", "--clearmodifiers", combo.linux];
     } else {
       const nircmdPath = this.getNircmdPath();
       if (nircmdPath) {
