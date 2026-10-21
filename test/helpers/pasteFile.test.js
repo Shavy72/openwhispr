@@ -65,8 +65,13 @@ test("pasteFile on macOS without Accessibility shows the dialog and rejects clea
   assert.deepEqual(written, ["/tmp/beispiel.mp3"]);
 });
 
-test("pasteFile still rejects on Linux", async (t) => {
+test("pasteFile on Linux without X11 rejects with a clear message", async (t) => {
   asPlatform(t, "linux");
+  const display = process.env.DISPLAY;
+  delete process.env.DISPLAY;
+  t.after(() => {
+    if (display !== undefined) process.env.DISPLAY = display;
+  });
   const ClipboardManager = loadWithMocks({ accessibility: true, written: [] });
-  await assert.rejects(new ClipboardManager().pasteFile("/tmp/x.mp3"), /Windows and macOS/);
+  await assert.rejects(new ClipboardManager().pasteFile("/tmp/x.mp3"), /X11-Sitzung/);
 });
