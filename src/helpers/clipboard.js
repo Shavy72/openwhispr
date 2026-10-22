@@ -555,7 +555,7 @@ class ClipboardManager {
   _getPortalTokenPath() {
     const cacheDir = path.join(
       process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache"),
-      "openwhispr"
+      "flowbase-stimme"
     );
     return path.join(cacheDir, "portal-paste-token");
   }

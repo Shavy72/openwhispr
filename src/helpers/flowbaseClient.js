@@ -48,7 +48,7 @@ const MESSAGES = {
 };
 
 function defaultTempDir() {
-  return path.join(os.tmpdir(), "openwhispr-voice");
+  return path.join(os.tmpdir(), "flowbase-stimme-voice");
 }
 
 function defaultDeps() {

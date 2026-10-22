@@ -4,7 +4,8 @@ const path = require("path");
 const { app, safeStorage } = require("electron");
 const debugLogger = require("./debugLogger");
 
-const SERVICE = "OpenWhispr";
+// Own keyring service; the OpenWhispr entry is deliberately never read.
+const SERVICE = "Flowbase Stimme";
 const ACCOUNT = "secrets-master-key";
 const ALGO = "aes-256-gcm";
 const IV_LEN = 12;

@@ -1,0 +1,313 @@
+/* Flowbase Stimme — Premium Liquid Glass.
+   Token-Namen (--lg-*) 1:1 aus Flowbase client/src/index.css übernommen. */
+:root {
+  color-scheme: dark;
+  --lg-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --lg-ease: cubic-bezier(.4, 0, .2, 1);
+  --lg-in: cubic-bezier(.22, 1, .36, 1);
+  --lg-out: cubic-bezier(.33, 0, .18, 1);
+  --lg-press: cubic-bezier(.5, 0, .9, .6);
+  --lg-gold: #C8871A;
+  --lg-gold-light: #E39B22;
+  --lg-gold-deep: #9A6414;
+  --lg-gold-dim: rgba(200, 135, 26, .15);
+  --lg-bridge: #F2EAD6;
+  --lg-ice: #17B8C8;
+  --lg-ice-light: #5FD9E4;
+  --lg-ice-dim: rgba(23, 184, 200, .15);
+  --lg-petrol: #075E80;
+  --lg-glass-bg: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03));
+  --lg-glass-border: rgba(255, 255, 255, .10);
+  --lg-grad-hero: linear-gradient(95deg, #E39B22 0%, #C8871A 30%, #F2EAD6 46%, #5FD9E4 58%, #17B8C8 100%);
+  --lg-grad-edge: linear-gradient(120deg, #E39B22 0%, #C8871A 26%, #F2EAD6 40%, #5FD9E4 54%, #17B8C8 82%, #075E80 100%);
+  --lg-focus-ring: 0 0 0 3px rgba(23, 184, 200, .18);
+  --fb-app-bg:
+    radial-gradient(800px 500px at 5% -8%, rgba(245, 166, 35, .09), transparent 60%),
+    radial-gradient(900px 600px at 108% 40%, rgba(14, 165, 233, .08), transparent 60%),
+    radial-gradient(600px 400px at 40% 115%, rgba(139, 92, 246, .05), transparent 60%),
+    #0f1117;
+  --fb-text: #e8eaed;
+  --fb-muted: rgba(232, 234, 237, .58);
+  --fb-ok: #4ADE80;
+  --fb-err: #F87171;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body { color: var(--fb-text); -webkit-font-smoothing: antialiased; }
+body.fb-main { background: var(--fb-app-bg); }
+body.fb-pill { background: transparent; overflow: hidden; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: none; box-shadow: var(--lg-focus-ring), 0 0 0 1px var(--lg-ice); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ─── Hauptfenster ─────────────────────────────────────────── */
+.fb-screen {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fb-head { display: flex; align-items: center; gap: 12px; padding: 2px 4px 6px; }
+.fb-head img { width: 40px; height: 40px; border-radius: 11px; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+.fb-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  background: var(--lg-grad-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.fb-version { font-size: 12px; color: var(--fb-muted); }
+
+.lg-panel {
+  position: relative;
+  background:
+    linear-gradient(130deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .018)),
+    linear-gradient(180deg, rgba(8, 11, 16, .20), rgba(8, 11, 16, .34));
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 20px;
+  padding: 16px;
+  backdrop-filter: blur(28px) saturate(1.45) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    inset 0 -1px 0 rgba(0, 0, 0, .35),
+    0 24px 60px -24px rgba(0, 0, 0, .6);
+  animation: fbRise .42s var(--lg-in) both;
+}
+.lg-panel-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--lg-grad-edge);
+  opacity: .85;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes fbRise {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.fb-card-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fb-muted);
+}
+.fb-hint { margin: 0; font-size: 13px; color: var(--fb-muted); line-height: 1.45; }
+.fb-error { margin: 8px 0 0; font-size: 13px; color: var(--fb-err); }
+
+/* Formular */
+.fb-form { display: flex; flex-direction: column; gap: 10px; }
+.fb-label { font-size: 13px; color: var(--fb-muted); display: flex; flex-direction: column; gap: 6px; }
+.lg-input {
+  width: 100%;
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--fb-text);
+  font-size: 15px;
+  font-family: inherit;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35), inset 0 -1px 0 rgba(255, 255, 255, .06);
+  transition: box-shadow .2s var(--lg-ease), border-color .2s var(--lg-ease);
+}
+.lg-input::placeholder { color: rgba(255, 255, 255, .34); }
+.lg-input:focus {
+  outline: none;
+  border-color: var(--lg-ice);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .30), inset 0 -1px 0 rgba(255, 255, 255, .06), var(--lg-focus-ring);
+}
+
+/* Knöpfe */
+.lg-btn-gold {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1402;
+  cursor: pointer;
+  background: linear-gradient(180deg, var(--lg-gold-light) 0%, var(--lg-gold) 45%, var(--lg-gold-deep) 135%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 8px 24px rgba(200, 135, 26, .25);
+  transition: transform .42s var(--lg-out), box-shadow .46s var(--lg-out);
+}
+.lg-btn-gold:hover:not(:disabled) {
+  transform: translate3d(0, -1px, 0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 12px 30px rgba(200, 135, 26, .34);
+  transition-duration: .22s;
+  transition-timing-function: var(--lg-in);
+}
+.lg-btn-gold:active:not(:disabled) { transform: scale(.98); transition: transform .1s var(--lg-press); }
+.lg-btn-gold:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.lg-btn-gold:focus-visible {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), var(--lg-focus-ring), 0 0 0 1px var(--lg-ice);
+}
+
+.lg-btn-ghost {
+  border-radius: 12px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #BAE6FD;
+  cursor: pointer;
+  border: 1px solid rgba(23, 184, 200, .25);
+  background: rgba(23, 184, 200, .07);
+  transition: background .3s var(--lg-out), border-color .3s var(--lg-out), color .3s var(--lg-out);
+}
+.lg-btn-ghost:hover:not(:disabled) {
+  background: rgba(23, 184, 200, .14);
+  border-color: rgba(23, 184, 200, .45);
+  color: #E0F7FB;
+  transition-duration: .18s;
+}
+.lg-btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Konto */
+.fb-account { display: flex; align-items: center; gap: 12px; }
+.fb-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 700; color: #1d1402;
+  background: linear-gradient(180deg, var(--lg-gold-light), var(--lg-gold-deep));
+  flex: none;
+}
+.fb-account-text { flex: 1; min-width: 0; }
+.fb-account-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fb-account-mail { font-size: 12px; color: var(--fb-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Models */
+.fb-models { display: flex; flex-direction: column; gap: 6px; }
+.fb-model {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(255, 255, 255, .03);
+  cursor: pointer;
+  transition: background .3s var(--lg-out), border-color .3s var(--lg-out);
+}
+.fb-model:hover { background: rgba(255, 255, 255, .06); transition-duration: .16s; }
+.fb-model[aria-checked="true"] { border-color: rgba(200, 135, 26, .55); background: var(--lg-gold-dim); }
+.fb-radio {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .3);
+  flex: none;
+  transition: border-color .2s var(--lg-ease), box-shadow .3s var(--lg-spring);
+}
+.fb-model[aria-checked="true"] .fb-radio { border-color: var(--lg-gold-light); box-shadow: inset 0 0 0 3px #0f1117, inset 0 0 0 8px var(--lg-gold-light); }
+.fb-model-name { flex: 1; font-size: 14px; }
+
+/* Kürzel */
+.fb-shortcut { padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, .06); }
+.fb-shortcut:first-of-type { border-top: 0; padding-top: 0; }
+.fb-shortcut-row { display: flex; align-items: center; gap: 10px; }
+.fb-slot {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 700;
+  color: var(--lg-ice-light);
+  background: var(--lg-ice-dim);
+  flex: none;
+}
+.fb-shortcut-text { flex: 1; min-width: 0; }
+.fb-shortcut-name { font-size: 14px; font-weight: 600; }
+.fb-shortcut-desc { font-size: 12px; color: var(--fb-muted); }
+.fb-keys { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 0 36px; align-items: center; min-height: 26px; }
+.fb-key {
+  font-family: inherit;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .35);
+}
+.fb-keys-off { font-size: 12px; color: var(--fb-muted); }
+.fb-capture {
+  font-size: 12px;
+  color: var(--lg-ice-light);
+  padding: 3px 10px;
+  border-radius: 7px;
+  border: 1px dashed rgba(23, 184, 200, .6);
+  animation: fbBreath 1.6s var(--lg-ease) infinite alternate;
+}
+@keyframes fbBreath { from { border-color: rgba(23, 184, 200, .3); } to { border-color: rgba(23, 184, 200, .85); } }
+.fb-status { margin: 6px 0 0 36px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.fb-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: currentColor; }
+.fb-phase-recording { color: var(--fb-err); }
+.fb-phase-recording .fb-dot { animation: fbPulse 1.1s var(--lg-ease) infinite; }
+.fb-phase-working { color: var(--lg-ice-light); }
+.fb-phase-done { color: var(--fb-ok); }
+.fb-phase-error { color: var(--fb-err); }
+@keyframes fbPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+
+/* Schalter */
+.fb-switch-row { display: flex; align-items: center; gap: 12px; }
+.fb-switch-label { flex: 1; font-size: 14px; }
+.fb-switch {
+  position: relative;
+  width: 44px; height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--lg-glass-border);
+  background: rgba(255, 255, 255, .08);
+  cursor: pointer;
+  transition: background .3s var(--lg-ease);
+  flex: none;
+}
+.fb-switch::after {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #e8eaed;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .4);
+  transition: transform .35s var(--lg-spring);
+}
+.fb-switch[aria-checked="true"] { background: linear-gradient(180deg, var(--lg-gold-light), var(--lg-gold)); }
+.fb-switch[aria-checked="true"]::after { transform: translateX(18px); }
+.fb-switch:disabled { opacity: .5; cursor: not-allowed; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ─── Aufnahme-Pille ───────────────────────────────────────── */
+.fb-pill-wrap { height: 100%; display: grid; place-items: center; padding: 6px; }
+.fb-pill {
+  display: flex; align-items: center; gap: 10px;
+  max-width: 100%;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--lg-glass-border);
+  background: linear-gradient(180deg, rgba(30, 34, 44, .88), rgba(15, 17, 23, .92));
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 10px 26px -8px rgba(0, 0, 0, .6);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fbPillIn .35s var(--lg-spring) both;
+}
+.fb-pill-text { overflow: hidden; text-overflow: ellipsis; }
+.fb-pill .fb-dot { width: 10px; height: 10px; }
+.fb-pill.fb-phase-recording { color: var(--fb-text); }
+.fb-pill.fb-phase-recording .fb-dot { color: var(--fb-err); box-shadow: 0 0 10px rgba(248, 113, 113, .7); }
+.fb-pill.fb-phase-working .fb-dot { animation: fbPulse 1.1s var(--lg-ease) infinite; }
+@keyframes fbPillIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
