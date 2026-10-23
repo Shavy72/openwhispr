@@ -115,3 +115,44 @@ test("preload exponiert genau die Methoden aus bridge.d.ts mit den Kanälen aus 
     assert.equal(CHANNELS[key], channel, name);
   }
 });
+
+test("submitRecording über 50 MB → ok:false mit deutschem Text", async () => {
+  const { MESSAGES } = require("../../../src/flowbase/main/ipc");
+  let called = false;
+  const h = createHandlers(
+    deps({
+      shortcuts: {
+        ...deps().shortcuts,
+        submitRecording: async () => {
+          called = true;
+          return { ok: true };
+        },
+      },
+    })
+  );
+  const tooBig = new ArrayBuffer(50 * 1024 * 1024 + 1);
+  assert.deepEqual(await h.submitRecording("pill", "A", tooBig, "audio/webm"), {
+    ok: false,
+    error: "Aufnahme ist zu groß.",
+  });
+  assert.equal(MESSAGES.recordingTooLarge, "Aufnahme ist zu groß.");
+  assert.equal(called, false);
+});
+
+test("setShortcut: Nicht-String und über 500 Zeichen → ok:false", async () => {
+  const h = createHandlers(deps());
+  assert.deepEqual(await h.setShortcut("main", "A", 42), { ok: false, error: "Ungültige Eingabe." });
+  assert.deepEqual(await h.setShortcut("main", null, "Control+X"), {
+    ok: false,
+    error: "Ungültige Eingabe.",
+  });
+  assert.deepEqual(await h.setShortcut("main", "A", "x".repeat(501)), {
+    ok: false,
+    error: "Ungültige Eingabe.",
+  });
+});
+
+test('setActiveModel("") → ok:false', async () => {
+  const h = createHandlers(deps());
+  assert.deepEqual(await h.setActiveModel("main", ""), { ok: false, error: "Ungültige Eingabe." });
+});

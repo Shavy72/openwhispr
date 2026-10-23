@@ -4,7 +4,7 @@
 //   (sonst landet der eingefügte Text im falschen Feld).
 
 const path = require("path");
-const { BrowserWindow, screen } = require("electron");
+const { app, BrowserWindow, screen } = require("electron");
 const { DEV_SERVER_URL } = require("../../helpers/devServerManager");
 
 const ROOT = path.join(__dirname, "..", "..", "..");
@@ -12,8 +12,18 @@ const PRELOAD = path.join(ROOT, "preload.js");
 const PILL_SIZE = { width: 280, height: 72 };
 const PILL_BOTTOM_GAP = 24;
 
+// Im Paket liegen die Icons per extraResources unter resourcesPath/src/assets (nicht im asar).
+function iconPath({ isPackaged, resourcesPath, platform }) {
+  const base = isPackaged ? resourcesPath : ROOT;
+  return path.join(base, "src", "assets", platform === "win32" ? "icon.ico" : "icon.png");
+}
+
 function windowIcon() {
-  return path.join(ROOT, "src", "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
+  return iconPath({
+    isPackaged: Boolean(app && app.isPackaged),
+    resourcesPath: process.resourcesPath,
+    platform: process.platform,
+  });
 }
 
 const webPreferences = {
@@ -98,4 +108,4 @@ function showMainWindow(win) {
   win.focus();
 }
 
-module.exports = { createMainWindow, createPillWindow, loadApp, showPill, showMainWindow, ROOT };
+module.exports = { createMainWindow, createPillWindow, loadApp, showPill, showMainWindow, iconPath, windowIcon, ROOT };

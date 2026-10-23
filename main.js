@@ -57,8 +57,7 @@ function isOwnWindow(sender) {
 }
 
 function createTray() {
-  const iconFile = process.platform === "win32" ? "icon.ico" : "icon.png";
-  let image = nativeImage.createFromPath(path.join(windows.ROOT, "src", "assets", iconFile));
+  let image = nativeImage.createFromPath(windows.windowIcon());
   if (!image.isEmpty() && process.platform !== "win32") image = image.resize({ width: 16, height: 16 });
   tray = new Tray(image);
   tray.setToolTip("Flowbase Stimme");

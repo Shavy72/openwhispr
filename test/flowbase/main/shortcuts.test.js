@@ -244,3 +244,79 @@ test("A: manueller Stopp ohne Abgabe → nach 30 s abgebrochen", (t) => {
   assert.deepEqual(statuses.at(-1), { slot: "A", phase: "error", message: MESSAGES.aborted });
   assert.equal(controller.getBusy(), null);
 });
+
+// Fehlerpfade: Abhängigkeiten werfen. Eigener Aufbau, damit setup() unverändert bleibt.
+function setupThrowing({ handleRecording, pasteText, registerAccelerator }) {
+  const statuses = [];
+  const registered = new Set();
+  let persisted = null;
+  const controller = createShortcutController({
+    registerAccelerator:
+      registerAccelerator ||
+      ((acc) => {
+        registered.add(acc);
+        return true;
+      }),
+    unregisterAccelerator: (acc) => registered.delete(acc),
+    shortcuts: { A: "Control+Alt+A", B: "Control+Alt+B", C: "Control+Alt+C" },
+    persistShortcuts: (map) => {
+      persisted = map;
+    },
+    runVoiceMessage: async () => {},
+    handleRecording: handleRecording || (async () => ({ ok: true, text: "Hallo" })),
+    pasteText: pasteText || (async () => {}),
+    showPill: () => {},
+    hidePill: () => {},
+    sendToggle: () => {},
+    emitStatus: (s) => statuses.push(s),
+    setTimer: () => 1,
+    clearTimer: () => {},
+    createGate: () => () => true,
+  });
+  return { controller, statuses, registered, getPersisted: () => persisted };
+}
+
+test("submitRecording: handleRecording wirft → error-Status, Zustand zurückgesetzt", async () => {
+  const { controller, statuses } = setupThrowing({
+    handleRecording: async () => {
+      throw new Error("kaputt");
+    },
+  });
+  controller.press("C");
+  const result = await controller.submitRecording("C", Buffer.from("x"), "audio/webm");
+  assert.deepEqual(result, { ok: false, error: MESSAGES.unexpected });
+  assert.deepEqual(statuses.at(-1), { slot: "C", phase: "error", message: MESSAGES.unexpected });
+  assert.equal(controller.getBusy(), null);
+});
+
+test("submitRecording: pasteText wirft → error-Status mit Einfüge-Fehler", async () => {
+  const { controller, statuses } = setupThrowing({
+    pasteText: async () => {
+      throw new Error("kein Fokus");
+    },
+  });
+  controller.press("A");
+  const result = await controller.submitRecording("A", Buffer.from("x"), "audio/webm");
+  assert.deepEqual(result, { ok: false, error: MESSAGES.textPasteFailed });
+  assert.deepEqual(statuses.at(-1), { slot: "A", phase: "error", message: MESSAGES.textPasteFailed });
+  assert.equal(controller.getBusy(), null);
+});
+
+test("setShortcut: registerAccelerator wirft → ok:false, altes Kürzel bleibt", () => {
+  const registered = new Set();
+  const { controller, getPersisted } = setupThrowing({
+    registerAccelerator: (acc) => {
+      if (acc === "Kaputt+++") throw new Error("ungültiger Accelerator");
+      registered.add(acc);
+      return true;
+    },
+  });
+  controller.registerAll();
+  assert.deepEqual(controller.setShortcut("A", "Kaputt+++"), {
+    ok: false,
+    error: MESSAGES.shortcutTaken,
+  });
+  assert.equal(controller.getShortcuts().A, "Control+Alt+A");
+  assert.ok(registered.has("Control+Alt+A"));
+  assert.equal(getPersisted(), null);
+});

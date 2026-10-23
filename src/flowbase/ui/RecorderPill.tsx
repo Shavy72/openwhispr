@@ -62,18 +62,29 @@ export default function RecorderPill() {
       startingRef.current = true;
       stopRequestedRef.current = false;
       setView({ slot, phase: "recording", message: RECORDING_TEXT[slot] });
+      // Leerer Buffer: Main erkennt den Fehler und meldet ihn per onStatus.
+      const fail = async (message: string, mimeType: string) => {
+        startingRef.current = false;
+        recorderRef.current = null;
+        setView({ slot, phase: "error", message });
+        await submit(slot, new ArrayBuffer(0), mimeType);
+      };
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch {
-        startingRef.current = false;
-        // Leerer Buffer: Main erkennt den Mikrofon-Fehler und meldet ihn per onStatus.
-        setView({ slot, phase: "error", message: "Mikrofon nicht verfügbar." });
-        await submit(slot, new ArrayBuffer(0), "");
+        await fail("Mikrofon nicht verfügbar.", "");
         return;
       }
       const mimeType = pickMimeType();
-      const rec = new MediaRecorder(stream, { mimeType });
+      let rec: MediaRecorder;
+      try {
+        rec = new MediaRecorder(stream, { mimeType });
+      } catch {
+        stream.getTracks().forEach((t) => t.stop());
+        await fail("Aufnahme konnte nicht starten.", mimeType);
+        return;
+      }
       const chunks: Blob[] = [];
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
@@ -87,7 +98,14 @@ export default function RecorderPill() {
       };
       recorderRef.current = rec;
       startingRef.current = false;
-      rec.start();
+      try {
+        rec.start();
+      } catch {
+        rec.onstop = null;
+        stream.getTracks().forEach((t) => t.stop());
+        await fail("Aufnahme konnte nicht starten.", mimeType);
+        return;
+      }
       if (stopRequestedRef.current) stop();
     };
 

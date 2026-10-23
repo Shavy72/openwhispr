@@ -1,5 +1,5 @@
 {
-  "name": "open-whispr",
+  "name": "flowbase-stimme",
   "productName": "Flowbase Stimme",
   "version": "1.12.0",
   "description": "Flowbase Stimme – Diktat und Sprachnachrichten per Tastenkürzel für Flowbase",
@@ -48,8 +48,7 @@
     "desktop-app"
   ],
   "author": {
-    "name": "OpenWhispr Team",
-    "email": "support@openwhispr.com"
+    "name": "Flowbase"
   },
   "license": "MIT",
   "devDependencies": {
