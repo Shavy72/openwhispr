@@ -10,7 +10,7 @@ const load = () => import("../../src/helpers/linuxAutostart.js");
 // would leak a bogus value into every later test in this file.
 const MANAGED_ENV = ["XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_DATA_DIRS", "APPIMAGE", "NODE_ENV"];
 
-const ICON_THEME_SUBPATH = path.join("icons", "hicolor", "256x256", "apps", "open-whispr.png");
+const ICON_THEME_SUBPATH = path.join("icons", "hicolor", "256x256", "apps", "flowbase-stimme.png");
 
 function setEnv(name, value) {
   if (value === undefined) delete process.env[name];
@@ -103,9 +103,9 @@ test(
   withTmpXdgDirs(async () => {
     const { buildDesktopFileContents } = await load();
 
-    const contents = buildDesktopFileContents("/a/b/OpenWhispr.AppImage", "open-whispr");
+    const contents = buildDesktopFileContents("/a/b/OpenWhispr.AppImage", "flowbase-stimme");
     assert.match(contents, /^Exec="\/a\/b\/OpenWhispr\.AppImage" --hidden$/m);
-    assert.match(contents, /^Icon=open-whispr$/m);
+    assert.match(contents, /^Icon=flowbase-stimme$/m);
     assert.match(contents, /^X-GNOME-Autostart-enabled=true$/m);
   })
 );
@@ -176,7 +176,7 @@ test(
     writeEntry(path.join(root, "system-data", ICON_THEME_SUBPATH), "pretend png");
 
     setAutostartEnabled(true);
-    assert.match(fs.readFileSync(getDesktopFilePath(), "utf8"), /^Icon=open-whispr$/m);
+    assert.match(fs.readFileSync(getDesktopFilePath(), "utf8"), /^Icon=flowbase-stimme$/m);
     assert.ok(!fs.existsSync(path.join(root, "data", ICON_THEME_SUBPATH)));
   })
 );
@@ -346,5 +346,26 @@ test(
 
     const contents = fs.readFileSync(getDesktopFilePath(), "utf8");
     assert.match(contents, /^Exec="\/installed\/OpenWhispr\.AppImage" --hidden$/m);
+  })
+);
+
+test(
+  "Autostart-Eintrag trägt eigene Identität und lässt OpenWhispr unberührt",
+  withTmpXdgDirs(async (root) => {
+    const { setAutostartEnabled, getDesktopFilePath } = await load();
+
+    const foreign = path.join(root, "config", "autostart", "open-whispr.desktop");
+    writeEntry(foreign, "[Desktop Entry]\nType=Application\nName=OpenWhispr\n");
+    process.env.APPIMAGE = "/apps/Flowbase-Stimme.AppImage";
+    setAutostartEnabled(true);
+
+    assert.equal(path.basename(getDesktopFilePath()), "flowbase-stimme.desktop");
+    const contents = fs.readFileSync(getDesktopFilePath(), "utf8");
+    assert.match(contents, /^Name=Flowbase Stimme$/m);
+    assert.match(contents, /^Exec="\/apps\/Flowbase-Stimme\.AppImage" --hidden$/m);
+    assert.doesNotMatch(contents, /OpenWhispr/);
+
+    setAutostartEnabled(false);
+    assert.ok(fs.existsSync(foreign));
   })
 );

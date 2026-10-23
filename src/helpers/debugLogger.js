@@ -403,11 +403,6 @@ class DebugLogger {
     }
   }
 
-  logWhisperPipeline(stage, details) {
-    if (!this.isDebugEnabled()) return;
-    this.debug(`Whisper Pipeline - ${stage}`, details, "whisper");
-  }
-
   logSTTPipeline(stage, details) {
     if (!this.isDebugEnabled()) return;
     this.debug(`STT Pipeline - ${stage}`, details, "stt");
